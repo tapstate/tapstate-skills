@@ -1,0 +1,14 @@
+version: tapstate/v1
+kind: pipeline
+id: orders_to_archive
+source: src_orders
+settings:
+  read_mode: snapshot_and_cdc
+  start_from: earliest
+serve:
+  from: orders
+  sync:
+    - id: archive_orders
+      source: tgt_archive
+      write_mode: upsert
+      ddl: fail

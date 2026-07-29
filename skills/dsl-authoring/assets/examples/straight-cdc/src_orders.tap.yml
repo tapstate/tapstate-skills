@@ -1,0 +1,8 @@
+version: tapstate/v1
+kind: source
+id: src_orders
+connector: mysql
+mode: cdc
+tables: [orders]
+srs:
+  enabled: true

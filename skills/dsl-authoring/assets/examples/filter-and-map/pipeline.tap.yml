@@ -1,0 +1,24 @@
+version: tapstate/v1
+kind: pipeline
+id: eu_customer_profiles
+source: src_customers
+transforms:
+  - id: eu_customers
+    type: filter
+    from: customers
+    expr: "op != 'd' && after.region == 'EU'"
+  - id: customer_profile
+    type: map
+    from: eu_customers
+    fields:
+      customer_id: $id
+      display_name: "=after.first_name + ' ' + after.last_name"
+      region: "=after.region"
+      internal_note: false
+      profile_type: customer
+serve:
+  from: customer_profile
+  sync:
+    - id: profiles
+      source: tgt_profiles
+      write_mode: upsert

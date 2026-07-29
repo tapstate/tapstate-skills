@@ -1,0 +1,30 @@
+version: tapstate/v1
+kind: pipeline
+id: customer_documents
+source: src_commerce
+transforms:
+  - id: customer_with_orders
+    type: nest
+    from:
+      customer: customers
+      order: orders
+    primary_key: customer_id
+    order: main_first
+    root:
+      from: customer
+      key: [customer_id]
+      mode: upsert
+      embed:
+        - from: order
+          on:
+            customer_id: customer_id
+          as: array
+          path: orders
+          arrayKey: [order_id]
+          trackJoinKeyChanges: true
+serve:
+  from: customer_with_orders
+  sync:
+    - id: customer_documents
+      source: tgt_documents
+      write_mode: upsert

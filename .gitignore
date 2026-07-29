@@ -1,0 +1,11 @@
+.DS_Store
+.agents/
+.claude/
+.codex/
+.env
+.env.*
+.idea/
+.upstream/
+.vscode/
+node_modules/
+*.log

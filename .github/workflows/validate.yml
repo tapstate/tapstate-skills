@@ -1,0 +1,211 @@
+name: validate
+
+on:
+  push:
+    branches:
+      - main
+      - "ws/**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      LC_ALL: C.UTF-8
+      SKILLS_CLI_VERSION: 1.5.20
+      TAPSTATE_COMMIT: 1ff03dce10af298cb3f1925e352050b36dcdeb55
+      TAPSTATE_CLI_VERSION: 0.1.0
+      TAPSTATE_CLI_LINUX_X64_SHA256: 1ff1cb12e9d4b95e3153dff21bc23843f4829f17f572a59b46ec4518d20dc94b
+      TAPSTATE_SCHEMA_SHA256: 7fb7613b8da4b7757d4907e0e0d16ccf7baae3fcc3469492aff1ed98b1d902a7
+      CJK_PATTERN: '[\x{2e80}-\x{303f}\x{3040}-\x{30ff}\x{3100}-\x{318f}\x{31a0}-\x{31ef}\x{31f0}-\x{31ff}\x{3400}-\x{4dbf}\x{4e00}-\x{9fff}\x{a960}-\x{a97f}\x{ac00}-\x{d7af}\x{d7b0}-\x{d7ff}\x{f900}-\x{faff}\x{fe10}-\x{fe1f}\x{fe30}-\x{fe4f}\x{ff00}-\x{ffef}\x{1aff0}-\x{1afff}\x{1b000}-\x{1b16f}\x{1f200}-\x{1f2ff}\x{20000}-\x{323af}]'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Verify upstream lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$(mktemp)"
+          trap 'rm -f "$expected"' EXIT
+          cat > "$expected" <<EOF
+          tapstate_commit=${TAPSTATE_COMMIT}
+          dsl_version=tapstate/v1
+          schema_sha256=${TAPSTATE_SCHEMA_SHA256}
+          cli_version=${TAPSTATE_CLI_VERSION}
+          cli_linux_x64_sha256=${TAPSTATE_CLI_LINUX_X64_SHA256}
+          EOF
+          diff -u "$expected" upstream.lock
+
+      - name: Reject CJK in tracked files
+        shell: bash
+        run: |
+          set -euo pipefail
+          probe="$(printf '\xE4\xB8\xAD')"
+          grep -qP "$CJK_PATTERN" <<< "$probe"
+          if grep -qP "$CJK_PATTERN" <<< "Tapstate"; then
+            echo "::error::CJK detector rejected an ASCII control value."
+            exit 1
+          fi
+          if git grep -nP "$CJK_PATTERN" -- .; then
+            echo "::error::CJK characters found in this English-only repository."
+            exit 1
+          fi
+
+      - name: Reject CJK in change metadata
+        shell: bash
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            range="origin/${{ github.base_ref }}..HEAD"
+          elif git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null; then
+            range="${{ github.event.before }}..${{ github.sha }}"
+          else
+            range="${{ github.sha }}"
+          fi
+
+          messages="$(git log --format='%H %B' "$range")"
+          if [[ -n "$messages" ]] && grep -qP "$CJK_PATTERN" <<< "$messages"; then
+            echo "::error::CJK characters found in commit messages."
+            exit 1
+          fi
+          if [[ -n "${PR_TITLE:-}" ]] && grep -qP "$CJK_PATTERN" <<< "$PR_TITLE"; then
+            echo "::error::CJK characters found in the pull request title."
+            exit 1
+          fi
+          if [[ -n "${PR_BODY:-}" ]] && grep -qP "$CJK_PATTERN" <<< "$PR_BODY"; then
+            echo "::error::CJK characters found in the pull request body."
+            exit 1
+          fi
+
+      - name: Verify required repository surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -f skills/dsl-authoring/SKILL.md ]]
+          [[ -f skills/dsl-authoring/agents/openai.yaml ]]
+          [[ -f skills/dsl-authoring/references/tapstate-v1.schema.json ]]
+          [[ -d skills/dsl-authoring/assets/examples ]]
+          find skills/dsl-authoring/assets/examples \
+            -type f -name '*.tap.yml' -print -quit | grep -q .
+
+      - name: Verify local Markdown links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --offline --include-fragments=full --no-progress './**/*.md'
+          fail: true
+          failIfEmpty: true
+          lycheeVersion: v0.24.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.20.0
+
+      - name: Verify Skill shape, discovery, and installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ ! -f skills/dsl-authoring/README.md ]]
+          mapfile -t manifests < <(find skills -mindepth 2 -maxdepth 2 -type f -name SKILL.md -print | sort)
+          [[ "${#manifests[@]}" -eq 1 ]]
+          [[ "${manifests[0]}" == "skills/dsl-authoring/SKILL.md" ]]
+          npx --yes "skills@${SKILLS_CLI_VERSION}" add . --list | tee /tmp/skills-list.txt
+          grep -qF 'Found 1 skill' /tmp/skills-list.txt
+          grep -q 'dsl-authoring' /tmp/skills-list.txt
+          stage="$(mktemp -d)"
+          trap 'rm -rf "$stage"' EXIT
+          git init --quiet "$stage/project"
+          (
+            cd "$stage/project"
+            npx --yes "skills@${SKILLS_CLI_VERSION}" add "$GITHUB_WORKSPACE" \
+              --skill dsl-authoring --agent codex --copy --yes
+          )
+          installed="$stage/project/.agents/skills/dsl-authoring"
+          [[ -f "$installed/SKILL.md" ]]
+          diff -ru skills/dsl-authoring "$installed"
+
+      - name: Reject config and secret material in examples
+        shell: bash
+        run: |
+          set -euo pipefail
+          examples=skills/dsl-authoring/assets/examples
+          ruby -ryaml -e '
+            Dir.glob(ARGV.fetch(0) + "/**/*.tap.yml").sort.each do |path|
+              resource = YAML.safe_load(
+                File.read(path),
+                permitted_classes: [],
+                permitted_symbols: [],
+                aliases: false
+              )
+              next unless resource.is_a?(Hash) && resource["kind"] == "source"
+              abort("#{path}: Source examples must omit config.") if resource.key?("config")
+            end
+          ' "$examples"
+          if grep -RInEi --include='*.tap.yml' '(password|secret|token|api[_-]?key|private[_-]?key|credential)[[:space:]]*:' "$examples"; then
+            echo "::error::Potential secret material found in examples."
+            exit 1
+          fi
+
+      - name: Verify semantic example invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapped=skills/dsl-authoring/assets/examples/filter-and-map/pipeline.tap.yml
+          runtime=skills/dsl-authoring/references/runtime-support.md
+          grep -qE '^[[:space:]]+display_name:[[:space:]]+"=' "$mapped"
+          grep -qE '^[[:space:]]+region:[[:space:]]+"=' "$mapped"
+          grep -qF '| Inline nest |' "$runtime"
+          grep -qF 'Rejected by the linear DAG builder as a stateful transform.' "$runtime"
+
+      - name: Check out pinned Tapstate source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: tapstate/tapstate
+          ref: ${{ env.TAPSTATE_COMMIT }}
+          path: .upstream/tapstate
+
+      - name: Verify vendored schema against pinned Tapstate
+        shell: bash
+        run: |
+          set -euo pipefail
+          vendored=skills/dsl-authoring/references/tapstate-v1.schema.json
+          generated=.upstream/tapstate/core/core-schema/src/main/resources/schema/tapstate-v1.schema.json
+          echo "${TAPSTATE_SCHEMA_SHA256}  ${vendored}" | sha256sum --check --strict
+          echo "${TAPSTATE_SCHEMA_SHA256}  ${generated}" | sha256sum --check --strict
+          cmp "$generated" "$vendored"
+
+      - name: Validate examples with the pinned Tapstate CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset="tapstate-${TAPSTATE_CLI_VERSION}-linux-x64.tar.gz"
+          release="https://github.com/tapstate/tapstate/releases/download/v${TAPSTATE_CLI_VERSION}"
+          stage="$(mktemp -d)"
+          trap 'rm -rf "$stage"' EXIT
+          curl --fail --location --retry 3 --output "$stage/$asset" "$release/$asset"
+          echo "${TAPSTATE_CLI_LINUX_X64_SHA256}  $stage/$asset" | sha256sum --check --strict
+          (
+            cd "$stage"
+            tar -xzf "$asset"
+          )
+          cli="$stage/tapstate"
+          [[ -x "$cli" ]]
+          [[ "$($cli --version)" == "tapstate ${TAPSTATE_CLI_VERSION}" ]]
+          while IFS= read -r example; do
+            "$cli" validate "$example"
+          done < <(find skills/dsl-authoring/assets/examples -mindepth 1 -maxdepth 1 -type d -print | sort)

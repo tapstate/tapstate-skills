@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tapstate DSL Authoring"
+  short_description: "Create and maintain Tapstate DSL workspaces"
+  default_prompt: "Use $dsl-authoring to draft or update a Tapstate pipeline workspace."

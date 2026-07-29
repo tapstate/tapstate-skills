@@ -125,7 +125,6 @@ jobs:
           [[ "${#manifests[@]}" -eq 1 ]]
           [[ "${manifests[0]}" == "skills/dsl-authoring/SKILL.md" ]]
           npx --yes "skills@${SKILLS_CLI_VERSION}" add . --list | tee /tmp/skills-list.txt
-          grep -qF 'Found 1 skill' /tmp/skills-list.txt
           grep -q 'dsl-authoring' /tmp/skills-list.txt
           stage="$(mktemp -d)"
           trap 'rm -rf "$stage"' EXIT

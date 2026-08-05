@@ -34,11 +34,13 @@ Transforms, Views, and Serve resources, including references and data-flow
 semantics.
 
 Connector-specific members inside `source.config` are the only dynamic DSL
-boundary. They must come from the live connector catalog through MCP. The Skill
-does not infer configuration keys, defaults, or secret values from model memory
-or examples. When editing an existing Source, it preserves `source.config` by
-default. Replacing it requires explicit user intent and a current contract from
-MCP.
+boundary. For a known connector, the Skill uses live MCP `source_draft` to
+validate structured config and return canonical Source YAML without persisting an
+artifact. The returned document is written under `source/`; only a later
+complete-workspace apply creates online artifacts. The Skill does not infer
+configuration keys, defaults, or secret values from model memory or examples.
+When editing an existing Source, it preserves `source.config` by default.
+Replacing it requires explicit user intent and a current contract from MCP.
 
 Without MCP, the Skill can produce a config-free draft and validate its offline
 DSL semantics. That draft is not runnable. Offline validation also does not

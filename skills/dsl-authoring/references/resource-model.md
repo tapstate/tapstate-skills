@@ -15,7 +15,10 @@ reading the schema alone.
 
 ## Workspace and identity
 
-- Store one top-level resource in each `*.tap.yml` file.
+- Store one top-level resource in each `*.tap.yml` file. For new workspaces,
+  place files by kind: `source/`, `pipeline/`, `transform/`, `view/`, and
+  `serve/`. The loader discovers files recursively, so a legacy flat workspace
+  remains valid and does not need a layout-only migration.
 - Set `version: tapstate/v1` and one of the five kinds: `source`, `pipeline`,
   `transform`, `view`, or `serve`.
 - Give every top-level resource an `id` that is unique across all kinds in the
@@ -39,7 +42,10 @@ A `source` owns a connector relationship. It has two roles:
 
 `connector` is required. `config` is the only dynamic DSL member boundary: its
 member names, types, defaults, visibility rules, and secret flags must come from
-the live connector catalog through MCP. Omit `config` when that contract is not
+the live connector catalog through MCP. When available, `source_draft` validates
+a complete Source and renders its canonical YAML without persisting it. Write
+that result to the local Source file, then apply the complete workspace only when
+online execution is requested. Omit `config` when the live contract is not
 available. When editing an existing source, preserve its complete `config`
 mapping by default and never reveal secret values.
 

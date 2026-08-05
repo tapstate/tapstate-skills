@@ -16,24 +16,27 @@ describing a workspace as executable.
 
 1. Capture the intended source connector, read mode, table set, transforms,
    output connector, and delivery surface.
-2. Create one read `source` and one target connection-supplier `source` when a
+2. Place each new Source in `source/<id>.tap.yml` and the Pipeline in
+   `pipeline/<id>.tap.yml`. Use the equivalent kind directory for reusable
+   Transform, View, and Serve resources.
+3. Create one read `source` and one target connection-supplier `source` when a
    sync or push output is required.
-3. Omit `source.config` unless live MCP catalog data supplies its exact members.
-4. Create the Pipeline resource graph with explicit ids and `from` references.
-5. Choose only grammar-supported fields from `tapstate-v1.schema.json`.
-6. Check the requested graph against `runtime-support.md`.
-7. Run `tapstate validate path/to/workspace` and fix each coded error.
-8. Report separately: offline validation, missing dynamic config, current
+4. When live MCP exposes `source_draft`, invoke it directly for every Source
+   with a known connector id and the user-supplied structured config. Write its
+   canonical YAML response directly to the Source file. Do not create an empty
+   Source first, and do not preflight with connector list or connector get.
+5. Omit `source.config` only when that live contract is unavailable. Mark the
+   resulting config-free draft as not runnable.
+6. Create the Pipeline resource graph with explicit ids and `from` references.
+7. Choose only grammar-supported fields from `tapstate-v1.schema.json`.
+8. Check the requested graph against `runtime-support.md`.
+9. Run `tapstate validate path/to/workspace` and fix each coded error.
+10. Report separately: offline validation, missing dynamic config, current
    runtime support, and online run state.
 
-Start from a CLI scaffold when useful:
-
-```sh
-tapstate new --kind source --id src_orders --out ./workspace
-tapstate new --kind pipeline --id orders_to_archive --out ./workspace
-```
-
-The command uses `--kind`; `tapstate new source` is not equivalent.
+For a configured Source, the live draft response is the only starting document.
+Use a CLI scaffold only for a config-free static resource and place its generated
+file in the resource's kind directory before validation.
 
 ## Modify safely
 
@@ -44,8 +47,9 @@ target sources.
 - Preserve every existing `source.config` mapping byte-for-byte unless the user
   explicitly requests a connector configuration change.
 - For a requested config replacement, require current MCP catalog metadata and
-  obtain secret values from the user or a secret provider. Never infer a key or
-  print a secret.
+  obtain secret values from the user or a secret provider. When `source_draft`
+  is available, use it to validate and render the replacement. Never infer a key
+  or print a secret.
 - Preserve unrelated YAML and metadata. Rename an id only after updating every
   reference to it.
 - When inserting a transform, wire its `from` explicitly and update the next
@@ -119,3 +123,12 @@ does not prove:
 
 Only report those later states after their own authoritative operation returns
 success.
+
+## Handoff to online control
+
+`source_draft` is local-authoring support, not persistence. After all resources
+are written and local validation passes, apply the complete Source/Pipeline
+closure through `artifact_apply` only when the user asks for online execution.
+Start the Pipeline only after that apply succeeds. A partial Source apply creates
+an online state that no longer matches the workspace and is not an authoring
+workflow.

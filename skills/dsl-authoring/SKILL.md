@@ -37,17 +37,20 @@ new contract.
 1. Determine whether the request is to create, modify, explain, review, repair,
    validate, or run a workspace. Ask only for details that materially affect the
    resource graph or data flow.
-2. Inspect every existing `.tap.yml` file that participates in the workspace.
-   Resolve resource identities and references before making a change.
+2. Locate the workspace root and inspect every participating `.tap.yml` file.
+   Keep new resources in the kind directory: `source/<id>.tap.yml`,
+   `pipeline/<id>.tap.yml`, `transform/<id>.tap.yml`, `view/<id>.tap.yml`, or
+   `serve/<id>.tap.yml`. Do not move existing files merely to change layout.
 3. Plan the complete resource graph: Source resources, the Pipeline and its
    settings, Transform resources, and any Serve or View resources. Keep all
    static DSL semantics inside this skill.
-4. Author the smallest complete change. Use `tapstate new --kind <kind>` when a
-   CLI-generated resource skeleton is useful. Preserve existing names and IDs
-   unless the requested change requires a migration, and update every affected
-   reference together.
-5. Apply the connector-configuration gate below before adding or changing any
-   `source.config` member.
+4. Apply the connector-configuration gate below before authoring a new Source
+   or changing any `source.config` member.
+5. Author the remaining smallest complete change. For config-free static
+   resources, use `tapstate new --kind <kind>` only when its output can be
+   placed in the correct kind directory without an extra skeleton-and-rewrite
+   cycle. Preserve existing names and IDs unless the requested change requires a
+   migration, and update every affected reference together.
 6. Run `tapstate validate <workspace-path>` after writing. Repair errors from the
    coded CLI output, rerun validation, and report the exact remaining codes and
    locations if validation still fails. If the CLI is unavailable, state that
@@ -78,8 +81,19 @@ Understand that `source.config` holds connector-owned fields, but do not keep a
 static catalog of those member names, defaults, constraints, or secret flags.
 
 - For a new Source, a connector change, or an explicitly requested config
-  replacement, obtain current connector metadata through an available live
-  Tapstate MCP/catalog capability before writing any config member.
+  replacement, use the available live `source_draft` capability with the chosen
+  connector and the user-supplied structured config. It validates against the
+  current connector contract and returns canonical Source YAML without creating
+  an artifact or audit record.
+- When the request supplies a connector identifier, use it directly in one
+  `source_draft` request. Do not first call connector list or connector get to
+  confirm an already known id. Query the catalog only when the id is unknown,
+  the draft operation reports a connector-contract error, or the user asks to
+  compare connectors.
+- Write the returned YAML directly to `source/<id>.tap.yml`. Do not first write
+  a config-free Source and then revise it. The returned document may contain
+  user-supplied secret values; write it to the requested local workspace but do
+  not reproduce those values in chat, logs, diffs, or summaries.
 - Never infer config keys from model memory, old examples, another connector,
   or a connector name. Never invent defaults or secret values.
 - Preserve existing `source.config` by default. When editing another part of a
@@ -118,10 +132,13 @@ authoritative Tapstate online-control capabilities. Discover the available
 capabilities at runtime; do not assume an MCP server name, tool name, transport,
 URL, or hosting model.
 
-When suitable capabilities exist, complete the guarded sequence: obtain live
-connector metadata, finish config through the secure input path, validate
-locally, apply, start, and observe status, metrics, or logs. Report the result of
-each completed step and stop on authoritative coded errors without masking them.
+When suitable capabilities exist, complete the guarded sequence: draft each
+configured Source through `source_draft`, write the returned YAML into the local
+workspace, validate locally, apply the complete resource closure through
+`artifact_apply`, then start and observe the requested Pipeline. `source_draft`
+does not persist an artifact; `artifact_apply` is the only persistence handoff in
+this flow. Report the result of each completed step and stop on authoritative
+coded errors without masking them.
 
 When those capabilities do not exist, stop after the validated offline draft.
 Identify the missing live step and do not describe apply, start, or observation

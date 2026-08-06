@@ -19,6 +19,10 @@ a Skill-local README.
 - Treat `.claude-plugin/marketplace.json` plugin versions as a host update
   contract. Increment the affected plugin's semantic version whenever its
   installed source changes, and document the host-specific refresh path.
+- Keep `.agents/plugins/marketplace.json` and the root
+  `.codex-plugin/plugin.json` as the native Codex distribution surface. The
+  manifest must point at the repository's `./skills/` directory and use the same
+  version as the Claude-compatible marketplace entry.
 
 ## Authoring contracts
 
@@ -45,7 +49,7 @@ Use the versions pinned in `upstream.lock` and the validation workflow. At a
 minimum, verify:
 
 ```sh
-npx --yes skills@1.5.20 add . --list
+npx --yes skills add . --list
 tapstate validate skills/dsl-authoring/assets/examples/<example>
 ```
 

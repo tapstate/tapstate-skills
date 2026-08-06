@@ -32,13 +32,19 @@ describing a workspace as executable.
    canonical YAML response directly to the Source file before any other
    exploration. Do not create an empty Source first, and do not preflight with
    connector list or connector get.
-5. Omit `source.config` only when that live contract is unavailable. Mark the
+5. Treat a coded `source_draft` contract error as a stop for that Source. Report
+   its exact diagnostic and wait for corrected input instead of guessing keys,
+   creating a config-free fallback, or moving into pipeline authoring.
+6. Omit `source.config` only when that live contract is unavailable. Mark the
    resulting config-free draft as not runnable.
-6. Create the Pipeline resource graph with explicit ids and `from` references.
-7. Choose only grammar-supported fields from `tapstate-v1.schema.json`.
-8. Check the requested graph against `runtime-support.md`.
-9. Run `tapstate validate path/to/workspace` and fix each coded error.
-10. Report separately: offline validation, missing dynamic config, current
+7. Create the Pipeline resource graph with explicit ids and `from` references.
+8. Choose only grammar-supported fields from `tapstate-v1.schema.json`.
+9. Check the requested graph against `runtime-support.md`.
+10. Run `tapstate validate path/to/workspace` and fix each coded error. When the
+    user asked to run and MCP exposes `artifact_validate`, call it immediately
+    with the complete YAML closure after local validation; fix its diagnostics
+    before `artifact_apply`.
+11. Report separately: offline validation, missing dynamic config, current
    runtime support, and online run state.
 
 For a configured Source, the live draft response is the only starting document.
@@ -134,8 +140,9 @@ success.
 ## Handoff to online control
 
 `source_draft` is local-authoring support, not persistence. After all resources
-are written and local validation passes, apply the complete Source/Pipeline
+are written and local validation passes, call `artifact_validate` with the
+complete Source/Pipeline closure. Fix its diagnostics, then apply that same
 closure through `artifact_apply` only when the user asks for online execution.
-Start the Pipeline only after that apply succeeds. A partial Source apply creates
-an online state that no longer matches the workspace and is not an authoring
-workflow.
+Start the Pipeline only after that apply succeeds. A partial Source apply
+creates an online state that no longer matches the workspace and is not an
+authoring workflow.

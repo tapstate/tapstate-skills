@@ -146,8 +146,10 @@ jobs:
           grep -qF 'Do not run generic repository discovery' "$skill"
           grep -qF 'source_draft -> write -> author' "$skill"
           grep -qF 'Never run `echo`, `printf`, `true`, `:`' "$skill"
-          grep -qF 'call it immediately after local `tapstate validate` passes' "$skill"
+          grep -qF 'call `artifact_validate` immediately with the complete YAML' "$skill"
           grep -qF 'source_draft` contract error as an authoritative stop' "$skill"
+          grep -qF 'connection_test` and then' "$skill"
+          grep -qF '`connection_discover_schema` for every read Source' "$skill"
 
       - name: Require marketplace version bump for Skill changes
         shell: bash

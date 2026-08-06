@@ -41,10 +41,12 @@ describing a workspace as executable.
 8. Choose only grammar-supported fields from `tapstate-v1.schema.json`.
 9. Check the requested graph against `runtime-support.md`.
 10. Run `tapstate validate path/to/workspace` and fix each coded error. When the
-    user asked to run and MCP exposes `artifact_validate`, call it immediately
-    with the complete YAML closure after local validation; fix its diagnostics
-    before `artifact_apply`.
-11. Report separately: offline validation, missing dynamic config, current
+    user asked to run, call `connection_test` and then
+    `connection_discover_schema` for every read Source, not for a sink-only
+    connection supplier.
+11. After discovery succeeds, call `artifact_validate` with the complete YAML
+    closure and fix its diagnostics before `artifact_apply`.
+12. Report separately: offline validation, missing dynamic config, current
    runtime support, and online run state.
 
 For a configured Source, the live draft response is the only starting document.
@@ -141,8 +143,10 @@ success.
 
 `source_draft` is local-authoring support, not persistence. After all resources
 are written and local validation passes, call `artifact_validate` with the
-complete Source/Pipeline closure. Fix its diagnostics, then apply that same
-closure through `artifact_apply` only when the user asks for online execution.
-Start the Pipeline only after that apply succeeds. A partial Source apply
-creates an online state that no longer matches the workspace and is not an
-authoring workflow.
+complete Source/Pipeline closure. For an online run, test and discover every
+read Source first; discovery is the source-model input used by the preview sink
+target resolver and by row-expression checks. Fix `artifact_validate`
+diagnostics, then apply that same closure through `artifact_apply` only when the
+user asks for online execution. Start the Pipeline only after that apply
+succeeds. A partial Source apply creates an online state that no longer matches
+the workspace and is not an authoring workflow.

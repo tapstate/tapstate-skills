@@ -16,11 +16,12 @@ members.
 When MCP exposes `source_draft`, use it to validate a structured Source config
 against the live connector contract and render canonical YAML. It does not write
 an artifact or create an audit record. The authoring sequence is local file
-creation, offline validation, complete-closure `artifact_validate`,
-complete-closure `artifact_apply`, then optional Pipeline start. Call
-`artifact_validate` immediately after local validation when online execution was
-requested; fix its diagnostics before applying. Do not apply a standalone
-Source as a substitute for workspace authoring.
+creation, offline validation, `connection_test` and
+`connection_discover_schema` for every read Source, complete-closure
+`artifact_validate`, complete-closure `artifact_apply`, then optional Pipeline
+start. Sink-only connection suppliers are not discovered. Fix discovery or
+validation diagnostics before applying. Do not apply a standalone Source as a
+substitute for workspace authoring.
 
 ## Capability matrix
 

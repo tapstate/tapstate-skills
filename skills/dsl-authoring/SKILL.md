@@ -74,7 +74,7 @@ Workspace resolution is a blocking gate for create, modify, and run requests:
    be verified, ask for its path instead of probing unrelated directories.
 3. After verification, inspect only participating workspace files and then use
    the shortest applicable operation sequence:
-   `resolve -> inspect -> source_draft -> write -> author -> validate -> apply -> start/observe`.
+   `resolve -> inspect -> source_draft -> write -> author -> validate -> test/discover -> artifact_validate -> artifact_apply -> start/observe`.
 4. Do not run generic repository discovery, `git status`, generic CLI help,
    no-op shell commands, or connector list/get calls as preflight for a known
    connector. After a successful `source_draft`, write its returned YAML to the
@@ -86,10 +86,12 @@ Workspace resolution is a blocking gate for create, modify, and run requests:
    `source_draft -> write source/<id>.tap.yml -> continue`. Do not interleave
    source creation with connector discovery, pipeline authoring, or status
    narration.
-7. When the user asks to run and MCP exposes `artifact_validate`, call it immediately after local `tapstate validate` passes. Use the complete YAML
-   closure. Fix its diagnostics in the workspace and call it again before
-   `artifact_apply`; do not insert generic shell or CLI exploration between
-   these calls.
+7. When the user asks to run, call `connection_test` and then
+   `connection_discover_schema` for every read Source before `artifact_validate`.
+   Do not discover a sink-only connection supplier. After discovery succeeds,
+   call `artifact_validate` immediately with the complete YAML closure. Fix its
+   diagnostics in the workspace and call it again before `artifact_apply`; do
+   not insert generic shell or CLI exploration between these calls.
 
 This gate keeps authoring work inside the requested workspace and prevents an
 exploratory command from becoming a substitute for a required authoring step.
@@ -176,12 +178,14 @@ URL, or hosting model.
 
 When suitable capabilities exist, complete the guarded sequence: draft each
 configured Source through `source_draft`, write the returned YAML into the local
-workspace, validate locally, call `artifact_validate` with the complete resource
-closure, apply that same closure through `artifact_apply`, then start and
-observe the requested Pipeline. `source_draft` and `artifact_validate` do not
-persist an artifact; `artifact_apply` is the only persistence handoff in this
-flow. Report the result of each completed step and stop on authoritative coded
-errors without masking them.
+workspace, validate locally, test and discover every read Source, call
+`artifact_validate` with the complete resource closure, apply that same closure
+through `artifact_apply`, then start and observe the requested Pipeline.
+`source_draft` and `artifact_validate` do not persist an artifact;
+`connection_discover_schema` persists only the latest observed source model;
+`artifact_apply` is the artifact persistence handoff in this flow. Report the
+result of each completed step and stop on authoritative coded errors without
+masking them.
 
 When those capabilities do not exist, stop after the validated offline draft.
 Identify the missing live step and do not describe apply, start, or observation

@@ -62,6 +62,27 @@ new contract.
 7. State separately what was authored, what local validation proved, what the
    current runtime supports, and whether online execution was attempted.
 
+## Keep The First Actions Deterministic
+
+Workspace resolution is a blocking gate for create, modify, and run requests:
+
+1. Derive `<workspace-root>` from the path supplied by the user or from the
+   Tapstate CLI workdir settings. If the user identifies a current directory,
+   verify that directory itself; never substitute the installed Skill directory
+   or the agent process working directory.
+2. Verify the resolved root before creating files or calling MCP. If no root can
+   be verified, ask for its path instead of probing unrelated directories.
+3. After verification, inspect only participating workspace files and then use
+   the shortest applicable operation sequence:
+   `resolve -> inspect -> source_draft -> write -> author -> validate -> apply -> start/observe`.
+4. Do not run generic repository discovery, `git status`, generic CLI help,
+   no-op shell commands, or connector list/get calls as preflight for a known
+   connector. After a successful `source_draft`, write its returned YAML to the
+   final Source path immediately before continuing.
+
+This gate keeps authoring work inside the requested workspace and prevents an
+exploratory command from becoming a substitute for a required authoring step.
+
 ## Handle Each Task Mode
 
 - **Create**: Elicit source and destination intent, capture mode, tables, stream

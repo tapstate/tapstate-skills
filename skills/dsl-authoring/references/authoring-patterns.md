@@ -16,8 +16,10 @@ describing a workspace as executable.
 
 1. Capture the intended source connector, read mode, table set, transforms,
    output connector, and delivery surface.
-2. Resolve the requested Tapstate workspace, then create kind directories under
-   it as resources are added. Place each new Source in
+2. Resolve and verify the requested Tapstate workspace before any file or MCP
+   operation. If the path cannot be verified, ask for it rather than probing the
+   agent's current directory or an installed Skill directory. Then create kind
+   directories under it as resources are added. Place each new Source in
    `<workspace-root>/source/<id>.tap.yml` and the Pipeline in
    `<workspace-root>/pipeline/<id>.tap.yml`. Use the equivalent kind directory
    for reusable Transform, View, and Serve resources. These are workspace
@@ -27,8 +29,9 @@ describing a workspace as executable.
    sync or push output is required.
 4. When live MCP exposes `source_draft`, invoke it directly for every Source
    with a known connector id and the user-supplied structured config. Write its
-   canonical YAML response directly to the Source file. Do not create an empty
-   Source first, and do not preflight with connector list or connector get.
+   canonical YAML response directly to the Source file before any other
+   exploration. Do not create an empty Source first, and do not preflight with
+   connector list or connector get.
 5. Omit `source.config` only when that live contract is unavailable. Mark the
    resulting config-free draft as not runnable.
 6. Create the Pipeline resource graph with explicit ids and `from` references.

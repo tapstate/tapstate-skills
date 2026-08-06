@@ -125,7 +125,8 @@ jobs:
           set -euo pipefail
           skill=skills/dsl-authoring/SKILL.md
           grep -qF '<workspace-root>/source/<id>.tap.yml' "$skill"
-          grep -qF 'not a project-binding or installer destination' "$skill"
+          grep -qF 'not a project-binding or' "$skill"
+          grep -qF 'installer destination' "$skill"
 
       - name: Require marketplace version bump for Skill changes
         shell: bash

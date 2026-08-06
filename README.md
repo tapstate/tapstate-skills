@@ -7,19 +7,19 @@ Installable Agent Skills for authoring and operating Tapstate resources.
 Install every Skill globally for agents that support global Skill installation:
 
 ```sh
-npx --yes skills@1.5.20 add tapstate/tapstate-skills -a claude-code codex cursor antigravity-cli -g -y
+npx --yes skills add tapstate/tapstate-skills -a claude-code codex cursor antigravity-cli -g -y
 ```
 
 Install only the DSL authoring Skill globally:
 
 ```sh
-npx --yes skills@1.5.20 add tapstate/tapstate-skills --skill dsl-authoring -a claude-code codex cursor antigravity-cli -g -y
+npx --yes skills add tapstate/tapstate-skills --skill dsl-authoring -a claude-code codex cursor antigravity-cli -g -y
 ```
 
 List the Skills that the installer can discover:
 
 ```sh
-npx --yes skills@1.5.20 add tapstate/tapstate-skills --list
+npx --yes skills add tapstate/tapstate-skills --list
 ```
 
 The named agents use the shared `~/.agents/skills` global store. The explicit
@@ -45,6 +45,11 @@ codex plugin add tapstate-skills@tapstate-skills
 codex plugin marketplace upgrade tapstate-skills
 codex plugin add tapstate-skills@tapstate-skills
 ```
+
+The Codex marketplace resolves the repository-native
+`.agents/plugins/marketplace.json` entry and the root
+`.codex-plugin/plugin.json` manifest. The plugin uses the repository's existing
+`skills/` directory; it does not maintain a second Skill copy.
 
 ## DSL authoring boundary
 

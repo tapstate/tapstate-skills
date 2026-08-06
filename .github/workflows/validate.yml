@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LC_ALL: C.UTF-8
-      SKILLS_CLI_VERSION: 1.5.20
       TAPSTATE_COMMIT: 1ff03dce10af298cb3f1925e352050b36dcdeb55
       TAPSTATE_CLI_VERSION: 0.1.0
       TAPSTATE_CLI_LINUX_X64_SHA256: 1ff1cb12e9d4b95e3153dff21bc23843f4829f17f572a59b46ec4518d20dc94b
@@ -108,15 +107,30 @@ jobs:
         run: |
           set -euo pipefail
           ruby -rjson -e '
-            path = ".claude-plugin/marketplace.json"
-            marketplace = JSON.parse(File.read(path))
-            abort("#{path}: expected marketplace name") unless marketplace["name"] == "tapstate-skills"
-            plugins = marketplace.fetch("plugins")
-            plugin = plugins.find { |candidate| candidate["name"] == "tapstate-skills" }
-            abort("#{path}: missing tapstate-skills plugin") unless plugin
-            abort("#{path}: plugin source must be repository root") unless plugin["source"] == "./"
-            version = plugin["version"]
-            abort("#{path}: plugin version must omit build metadata") unless version.is_a?(String) && version.match?(/\A\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\z/)
+            claude_path = ".claude-plugin/marketplace.json"
+            claude_marketplace = JSON.parse(File.read(claude_path))
+            abort("#{claude_path}: expected marketplace name") unless claude_marketplace["name"] == "tapstate-skills"
+            claude_plugin = claude_marketplace.fetch("plugins").find { |candidate| candidate["name"] == "tapstate-skills" }
+            abort("#{claude_path}: missing tapstate-skills plugin") unless claude_plugin
+            abort("#{claude_path}: plugin source must be repository root") unless claude_plugin["source"] == "./"
+            version = claude_plugin["version"]
+            abort("#{claude_path}: plugin version must omit build metadata") unless version.is_a?(String) && version.match?(/\A\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\z/)
+
+            codex_path = ".agents/plugins/marketplace.json"
+            codex_marketplace = JSON.parse(File.read(codex_path))
+            abort("#{codex_path}: expected marketplace name") unless codex_marketplace["name"] == "tapstate-skills"
+            codex_plugin = codex_marketplace.fetch("plugins").find { |candidate| candidate["name"] == "tapstate-skills" }
+            abort("#{codex_path}: missing tapstate-skills plugin") unless codex_plugin
+            expected_source = { "source" => "local", "path" => "./" }
+            abort("#{codex_path}: plugin source must be repository root") unless codex_plugin["source"] == expected_source
+            abort("#{codex_path}: plugin installation policy must be AVAILABLE") unless codex_plugin.dig("policy", "installation") == "AVAILABLE"
+            abort("#{codex_path}: plugin authentication policy must be ON_INSTALL") unless codex_plugin.dig("policy", "authentication") == "ON_INSTALL"
+
+            manifest_path = ".codex-plugin/plugin.json"
+            manifest = JSON.parse(File.read(manifest_path))
+            abort("#{manifest_path}: expected plugin name") unless manifest["name"] == "tapstate-skills"
+            abort("#{manifest_path}: version must match marketplace") unless manifest["version"] == version
+            abort("#{manifest_path}: skills must resolve from the plugin root") unless manifest["skills"] == "./skills/"
           '
 
       - name: Verify workspace path boundary
@@ -139,7 +153,7 @@ jobs:
           else
             exit 0
           fi
-          if [[ -z "$(git diff --name-only "$base"..HEAD -- skills)" ]]; then
+          if [[ -z "$(git diff --name-only "$base"..HEAD -- skills .agents/plugins .codex-plugin)" ]]; then
             exit 0
           fi
           manifest=.claude-plugin/marketplace.json
@@ -171,14 +185,14 @@ jobs:
           mapfile -t manifests < <(find skills -mindepth 2 -maxdepth 2 -type f -name SKILL.md -print | sort)
           [[ "${#manifests[@]}" -eq 1 ]]
           [[ "${manifests[0]}" == "skills/dsl-authoring/SKILL.md" ]]
-          npx --yes "skills@${SKILLS_CLI_VERSION}" add . --list | tee /tmp/skills-list.txt
+          npx --yes skills add . --list | tee /tmp/skills-list.txt
           grep -q 'dsl-authoring' /tmp/skills-list.txt
           stage="$(mktemp -d)"
           trap 'rm -rf "$stage"' EXIT
           git init --quiet "$stage/project"
           (
             cd "$stage/project"
-            npx --yes "skills@${SKILLS_CLI_VERSION}" add "$GITHUB_WORKSPACE" \
+            npx --yes skills add "$GITHUB_WORKSPACE" \
               --skill dsl-authoring --agent codex --copy --yes
           )
           installed="$stage/project/.agents/skills/dsl-authoring"
@@ -191,7 +205,7 @@ jobs:
           set -euo pipefail
           log="$(mktemp)"
           trap 'rm -f "$log"' EXIT
-          npx --yes "skills@${SKILLS_CLI_VERSION}" add "$GITHUB_WORKSPACE" \
+          npx --yes skills add "$GITHUB_WORKSPACE" \
             --skill dsl-authoring \
             --agent claude-code codex cursor antigravity-cli \
             --global --yes 2>&1 | tee "$log"

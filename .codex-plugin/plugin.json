@@ -1,0 +1,35 @@
+{
+  "name": "tapstate-skills",
+  "version": "1.0.1",
+  "description": "Tapstate Agent Skills for authoring and operating tapstate/v1 workspaces.",
+  "author": {
+    "name": "Tapstate",
+    "url": "https://github.com/tapstate"
+  },
+  "homepage": "https://github.com/tapstate/tapstate-skills",
+  "repository": "https://github.com/tapstate/tapstate-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "tapstate",
+    "data-integration",
+    "skills"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Tapstate Skills",
+    "shortDescription": "Author and validate Tapstate DSL workspaces",
+    "longDescription": "Tapstate Skills packages DSL authoring and validation workflows for tapstate/v1 workspaces.",
+    "developerName": "Tapstate",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/tapstate/tapstate-skills",
+    "defaultPrompt": [
+      "Author a Tapstate DSL workspace.",
+      "Validate this Tapstate workspace."
+    ],
+    "brandColor": "#007F5F"
+  }
+}

@@ -16,9 +16,13 @@ describing a workspace as executable.
 
 1. Capture the intended source connector, read mode, table set, transforms,
    output connector, and delivery surface.
-2. Place each new Source in `source/<id>.tap.yml` and the Pipeline in
-   `pipeline/<id>.tap.yml`. Use the equivalent kind directory for reusable
-   Transform, View, and Serve resources.
+2. Resolve the requested Tapstate workspace, then create kind directories under
+   it as resources are added. Place each new Source in
+   `<workspace-root>/source/<id>.tap.yml` and the Pipeline in
+   `<workspace-root>/pipeline/<id>.tap.yml`. Use the equivalent kind directory
+   for reusable Transform, View, and Serve resources. These are workspace
+   directories initialized by Tapstate authoring, never paths relative to the
+   installed Skill.
 3. Create one read `source` and one target connection-supplier `source` when a
    sync or push output is required.
 4. When live MCP exposes `source_draft`, invoke it directly for every Source

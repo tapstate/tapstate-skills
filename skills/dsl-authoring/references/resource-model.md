@@ -16,9 +16,11 @@ reading the schema alone.
 ## Workspace and identity
 
 - Store one top-level resource in each `*.tap.yml` file. For new workspaces,
-  place files by kind: `source/`, `pipeline/`, `transform/`, `view/`, and
-  `serve/`. The loader discovers files recursively, so a legacy flat workspace
-  remains valid and does not need a layout-only migration.
+  create kind directories under the requested workspace root: `source/`,
+  `pipeline/`, `transform/`, `view/`, and `serve/`. These directories are a
+  Tapstate workspace convention, not paths within the installed Skill. The
+  loader discovers files recursively, so a legacy flat workspace remains valid
+  and does not need a layout-only migration.
 - Set `version: tapstate/v1` and one of the five kinds: `source`, `pipeline`,
   `transform`, `view`, or `serve`.
 - Give every top-level resource an `id` that is unique across all kinds in the

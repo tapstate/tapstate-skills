@@ -16,6 +16,9 @@ a Skill-local README.
 - Do not add a root `package.json` unless repository-owned Node tooling actually
   requires one. npm package metadata is not a Skill version contract.
 - Keep generated files and local installer output out of version control.
+- Treat `.claude-plugin/marketplace.json` plugin versions as a host update
+  contract. Increment the affected plugin's semantic version whenever its
+  installed source changes, and document the host-specific refresh path.
 
 ## Authoring contracts
 

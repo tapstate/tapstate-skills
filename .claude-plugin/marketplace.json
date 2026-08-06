@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "tapstate-skills",
+  "description": "Installable Agent Skills for authoring and operating Tapstate resources.",
+  "owner": {
+    "name": "Tapstate"
+  },
+  "plugins": [
+    {
+      "name": "tapstate-skills",
+      "description": "Installs the Tapstate Agent Skills collection, including dsl-authoring for tapstate/v1 workspaces.",
+      "version": "1.0.0",
+      "category": "development",
+      "source": "./",
+      "homepage": "https://github.com/tapstate/tapstate-skills"
+    }
+  ]
+}

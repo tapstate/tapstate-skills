@@ -145,6 +145,9 @@ jobs:
           grep -qF 'never substitute the installed Skill directory' "$skill"
           grep -qF 'Do not run generic repository discovery' "$skill"
           grep -qF 'source_draft -> write -> author' "$skill"
+          grep -qF 'Never run `echo`, `printf`, `true`, `:`' "$skill"
+          grep -qF 'call it immediately after local `tapstate validate` passes' "$skill"
+          grep -qF 'source_draft` contract error as an authoritative stop' "$skill"
 
       - name: Require marketplace version bump for Skill changes
         shell: bash

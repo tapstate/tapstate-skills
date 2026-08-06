@@ -37,10 +37,14 @@ new contract.
 1. Determine whether the request is to create, modify, explain, review, repair,
    validate, or run a workspace. Ask only for details that materially affect the
    resource graph or data flow.
-2. Locate the workspace root and inspect every participating `.tap.yml` file.
-   Keep new resources in the kind directory: `source/<id>.tap.yml`,
-   `pipeline/<id>.tap.yml`, `transform/<id>.tap.yml`, `view/<id>.tap.yml`, or
-   `serve/<id>.tap.yml`. Do not move existing files merely to change layout.
+2. Resolve the local Tapstate workspace from the request or the Tapstate CLI
+   workdir settings, then inspect every participating `.tap.yml` file. Never
+   resolve it relative to this installed Skill. For a new resource, create the
+   required kind directory under that workspace: `<workspace-root>/source/`,
+   `<workspace-root>/pipeline/`, `<workspace-root>/transform/`,
+   `<workspace-root>/view/`, or `<workspace-root>/serve/`. This is the Tapstate
+   workspace layout that `tapstate new` initializes, not a project-binding or
+   installer destination. Do not move existing files merely to change layout.
 3. Plan the complete resource graph: Source resources, the Pipeline and its
    settings, Transform resources, and any Serve or View resources. Keep all
    static DSL semantics inside this skill.
@@ -90,10 +94,12 @@ static catalog of those member names, defaults, constraints, or secret flags.
   confirm an already known id. Query the catalog only when the id is unknown,
   the draft operation reports a connector-contract error, or the user asks to
   compare connectors.
-- Write the returned YAML directly to `source/<id>.tap.yml`. Do not first write
-  a config-free Source and then revise it. The returned document may contain
-  user-supplied secret values; write it to the requested local workspace but do
-  not reproduce those values in chat, logs, diffs, or summaries.
+- Write the returned YAML directly to
+  `<workspace-root>/source/<id>.tap.yml`, creating that workspace kind directory
+  when needed. Do not first write a config-free Source and then revise it. The
+  returned document may contain user-supplied secret values; write it to the
+  requested local workspace but do not reproduce those values in chat, logs,
+  diffs, or summaries.
 - Never infer config keys from model memory, old examples, another connector,
   or a connector name. Never invent defaults or secret values.
 - Preserve existing `source.config` by default. When editing another part of a

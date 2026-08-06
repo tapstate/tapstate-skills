@@ -141,6 +141,10 @@ jobs:
           grep -qF '<workspace-root>/source/<id>.tap.yml' "$skill"
           grep -qF 'not a project-binding or' "$skill"
           grep -qF 'installer destination' "$skill"
+          grep -qF 'Workspace resolution is a blocking gate' "$skill"
+          grep -qF 'never substitute the installed Skill directory' "$skill"
+          grep -qF 'Do not run generic repository discovery' "$skill"
+          grep -qF 'source_draft -> write -> author' "$skill"
 
       - name: Require marketplace version bump for Skill changes
         shell: bash

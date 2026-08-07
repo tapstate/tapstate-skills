@@ -23,6 +23,12 @@ start. Sink-only connection suppliers are not discovered. Fix discovery or
 validation diagnostics before applying. Do not apply a standalone Source as a
 substitute for workspace authoring.
 
+MCP availability is established by the tools exposed to the current agent
+session. A local `tapstate validate` result, shell command, or file inspection
+does not establish Server reachability. If a required MCP tool is exposed, call
+it directly and preserve its transport or structured error; only a direct
+transport failure justifies reporting that the Server is unreachable.
+
 ## Capability matrix
 
 | Surface | Grammar and offline validation | Current preview runtime |

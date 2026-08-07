@@ -150,6 +150,9 @@ jobs:
           grep -qF 'source_draft` contract error as an authoritative stop' "$skill"
           grep -qF 'connection_test` and then' "$skill"
           grep -qF '`connection_discover_schema` for every read Source' "$skill"
+          grep -qF 'exposed MCP tool inventory' "$skill"
+          grep -qF 'returns a transport error is the only basis' "$skill"
+          grep -qF 'Never use this fallback while the MCP tool is exposed' "$skill"
 
       - name: Require marketplace version bump for Skill changes
         shell: bash

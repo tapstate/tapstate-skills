@@ -46,7 +46,11 @@ describing a workspace as executable.
     connection supplier.
 11. After discovery succeeds, call `artifact_validate` with the complete YAML
     closure and fix its diagnostics before `artifact_apply`.
-12. Report separately: offline validation, missing dynamic config, current
+12. For an online request, use the exposed MCP tool inventory as the capability
+    probe. If a required tool is listed, call it directly; do not report an
+    unreachable Server before that call. If it is absent, report the missing
+    MCP capability rather than claiming a transport failure.
+13. Report separately: offline validation, missing dynamic config, current
    runtime support, and online run state.
 
 For a configured Source, the live draft response is the only starting document.
@@ -149,4 +153,5 @@ target resolver and by row-expression checks. Fix `artifact_validate`
 diagnostics, then apply that same closure through `artifact_apply` only when the
 user asks for online execution. Start the Pipeline only after that apply
 succeeds. A partial Source apply creates an online state that no longer matches
-the workspace and is not an authoring workflow.
+the workspace and is not an authoring workflow. A local CLI result is not an MCP
+availability check; call exposed MCP tools before declaring the Server unreachable.

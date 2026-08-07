@@ -92,6 +92,10 @@ Workspace resolution is a blocking gate for create, modify, and run requests:
    call `artifact_validate` immediately with the complete YAML closure. Fix its
    diagnostics in the workspace and call it again before `artifact_apply`; do
    not insert generic shell or CLI exploration between these calls.
+8. Determine online capability from the current session's exposed MCP tool
+   inventory. If a required tool is exposed, call it before reporting any
+   server problem. Do not infer MCP reachability from a local CLI result, shell
+   probe, file inspection, or a previous message.
 
 This gate keeps authoring work inside the requested workspace and prevents an
 exploratory command from becoming a substitute for a required authoring step.
@@ -149,9 +153,11 @@ static catalog of those member names, defaults, constraints, or secret flags.
   logs, or summaries. Follow the live metadata's secret classification and the
   user's secure value mechanism.
 
-If live Tapstate MCP/catalog metadata is unavailable, omit `source.config`
-instead of synthesizing it. Produce a config-free draft, run offline validation
-when the CLI is available, and state clearly that the draft is not runnable.
+If the required live Tapstate MCP/catalog tool is not exposed in this session,
+omit `source.config` instead of synthesizing it. Produce a config-free draft, run
+offline validation when the CLI is available, and state clearly that the draft
+is not runnable. Never use this fallback while the MCP tool is exposed but
+uncalled.
 
 ## Interpret Validation Narrowly
 
@@ -175,6 +181,12 @@ Attempt online work only when the user requests it and the environment exposes
 authoritative Tapstate online-control capabilities. Discover the available
 capabilities at runtime; do not assume an MCP server name, tool name, transport,
 URL, or hosting model.
+
+The exposed MCP tool inventory is the availability probe. A direct MCP call that
+returns a transport error is the only basis for reporting that the Server is
+unreachable. If a required tool is listed, invoke it directly and preserve its
+structured result or error. If the tool is absent, report the missing MCP
+capability, not a guessed Server outage.
 
 When suitable capabilities exist, complete the guarded sequence: draft each
 configured Source through `source_draft`, write the returned YAML into the local

@@ -1,6 +1,6 @@
 {
   "name": "tapstate-skills",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Tapstate Agent Skills for authoring and operating tapstate/v1 workspaces.",
   "author": {
     "name": "Tapstate",

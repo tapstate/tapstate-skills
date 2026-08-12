@@ -1,7 +1,7 @@
 # Current Preview Runtime Support
 
 This matrix is pinned to Tapstate commit
-`1ff03dce10af298cb3f1925e352050b36dcdeb55`. The generated schema describes the
+`61e9e5bf314dec5d860e10460a49705d9b1b7268`. The generated schema describes the
 complete `tapstate/v1` grammar; this file describes the narrower runtime wired at
 that commit. Update both this matrix and the repository upstream lock when the
 baseline changes.
@@ -28,6 +28,43 @@ session. A local `tapstate validate` result, shell command, or file inspection
 does not establish Server reachability. If a required MCP tool is exposed, call
 it directly and preserve its transport or structured error; only a direct
 transport failure justifies reporting that the Server is unreachable.
+
+### Changing and removing applied resources
+
+`artifact_get` reads one applied resource of any kind by id and returns its
+canonical YAML with the `contentHash` of exactly those bytes. `artifact_delete`
+removes one applied resource of any kind by id and requires both `id` and
+`expectedContentHash`. It is write-scoped, so it appears only in a session
+permitted to write. Each draft of an `artifact_apply` closure accepts an
+optional `expectedContentHash`, and one stale precondition refuses the whole
+closure before any resource in it is written.
+
+`artifact_list` is not exposed on this face at this commit. An id must already
+be known, or come from a face that does list.
+
+Removal is permanent and leaves no tombstone. Two grounds refuse it, both judged
+before anything is written, so a refusal leaves storage unchanged:
+`artifact.in-use` when another resource still references the id, and
+`artifact.pipeline-not-stopped` when the id is a pipeline whose actual or
+desired state is running or about to be. A precondition that does not match the
+stored version is `artifact.version-conflict`; an id that is not stored at all
+is `artifact.not-found`.
+
+Removing a pipeline reclaims dependent state in the same operation. What is and
+is not reclaimed is a boundary rather than an implementation detail, because
+everything that survives is shared with something else:
+
+| On removing a pipeline | Current preview runtime |
+|---|---|
+| Its desired, state, and observation documents | Reclaimed in the same operation, so the converge side stops reconciling the id. |
+| Its own consumer entry on a shared SRS mining chain | Detached. A departed consumer's cursor is otherwise folded into two independent minimums that pin the chain's durable frontier and its cdc write headroom for every other pipeline on that chain, raising no error. |
+| The mining chain record itself | Never removed. Other pipelines may still be consuming it. |
+| Nest state | Never removed. |
+| Target tables and target database contents | Never removed. Removing a pipeline removes the declaration, not the data it already wrote. |
+
+A reclaim that fails does not put the artifact back: the removal has been judged
+and applied by then. Every reclaim step is attempted regardless, and the
+failures are reported together.
 
 ## Capability matrix
 

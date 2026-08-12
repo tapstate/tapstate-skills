@@ -1,4 +1,4 @@
-tapstate_commit=1ff03dce10af298cb3f1925e352050b36dcdeb55
+tapstate_commit=61e9e5bf314dec5d860e10460a49705d9b1b7268
 dsl_version=tapstate/v1
 schema_sha256=7fb7613b8da4b7757d4907e0e0d16ccf7baae3fcc3469492aff1ed98b1d902a7
 cli_version=0.1.0

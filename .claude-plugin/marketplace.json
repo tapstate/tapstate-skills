@@ -9,7 +9,7 @@
     {
       "name": "tapstate-skills",
       "description": "Installs the Tapstate Agent Skills collection, including dsl-authoring for tapstate/v1 workspaces.",
-      "version": "1.0.7",
+      "version": "1.0.8",
       "category": "development",
       "source": "./",
       "homepage": "https://github.com/tapstate/tapstate-skills"

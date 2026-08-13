@@ -202,3 +202,67 @@ masking them.
 When those capabilities do not exist, stop after the validated offline draft.
 Identify the missing live step and do not describe apply, start, or observation
 as completed.
+
+## Change Or Remove An Already-Applied Resource
+
+Every sequence above creates resources. A resource that has already been applied
+differs in one way that governs each step here: the stored version can have moved
+since this session last read it, and whoever moved it is not in this
+conversation. Editing and removal therefore both name the version they act on.
+
+Availability is judged exactly as for any other online capability, from the
+current session's exposed MCP tool inventory. When `artifact_get` or
+`artifact_delete` is absent, report the missing capability and stop; never
+describe an edit or a removal as attempted.
+
+`artifact_get` takes an `id` and returns that resource's canonical YAML together
+with the `contentHash` of exactly those bytes. That hash is the only supported
+precondition value. Never compute one locally, carry one over from an earlier
+session, or reuse one across resources. The two sequences are:
+
+- edit: `artifact_get -> author -> validate -> artifact_validate -> artifact_apply`
+- removal: `artifact_get -> artifact_delete`
+
+Three rules govern them:
+
+1. **Changing a resource that already exists requires `expectedContentHash` on
+   that resource's draft**, set to the `contentHash` returned by the
+   `artifact_get` just made on it. An apply without it overwrites whatever is
+   stored, whoever wrote it and whenever. A draft for a resource that does not
+   exist yet carries no precondition. Carrying one on an unchanged draft of the
+   same closure is also correct: if that resource has moved, refusing the batch
+   is the check working rather than a malfunction.
+2. **`artifact_delete` requires `expectedContentHash`.** It is a required
+   argument, not an optional one. The removal is permanent and leaves no
+   tombstone, and the only way back is applying the resource again.
+3. **Never answer `artifact.version-conflict` by dropping the precondition and
+   retrying.** That code means the stored version moved after this session read
+   it. An apply without the check would then overwrite precisely the change
+   somebody else had just made, leaving nothing behind to say it ever existed.
+   Call `artifact_get` again, redo the intended change on the version it
+   returns, and send that version's hash. If the change cannot be re-expressed
+   on the new version, stop and report the conflict.
+
+### Report A Refused Change Or Removal
+
+Stop on each code below without masking it, exactly as for any other
+authoritative coded error. Each one names a next step that belongs to the user.
+
+- **`artifact.in-use`**: another resource still references this id. Read the
+  `referrers` parameter and report which resources they are. Do not remove a
+  referrer to clear the way; which of the two to keep is the user's decision.
+- **`artifact.pipeline-not-stopped`**: the id is a pipeline that is running or
+  is about to. Read `actual` and `desired` and report both. Do not issue a stop
+  as part of the removal; stopping a pipeline carries its own consequences and
+  is the user's decision.
+- **`artifact.not-found`**: the id is not stored. Report that the target no
+  longer exists and stop. Never rewrite a precondition-bearing apply into one
+  without a precondition and send it again. The first request means change the
+  resource that is there, the rewritten one means create this resource, and an
+  author who asked for an edit is never told it became a creation.
+
+The last of those and rule 3 are one mistake wearing two faces: answering a
+failed precondition by removing the precondition. The codes differ only in what
+became of the resource meanwhile, `artifact.version-conflict` meaning somebody
+changed it and `artifact.not-found` meaning somebody removed it. Neither is
+repaired by retrying without the check.

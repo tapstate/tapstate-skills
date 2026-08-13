@@ -1,7 +1,7 @@
 # Current Preview Runtime Support
 
 This matrix is pinned to Tapstate commit
-`36f00e04b4308c520a05fafcf15c4467be328853`. The generated schema describes the
+`f65260270fb269047f58cba53288dbfa91840ec5`. The generated schema describes the
 complete `tapstate/v1` grammar; this file describes the narrower runtime wired at
 that commit. Update both this matrix and the repository upstream lock when the
 baseline changes.
@@ -63,8 +63,18 @@ everything that survives is shared with something else:
 | Target tables and target database contents | Never removed. Removing a pipeline removes the declaration, not the data it already wrote. |
 
 A reclaim that fails does not put the artifact back: the removal has been judged
-and applied by then. Every reclaim step is attempted regardless, and the
-failures are reported together.
+and applied by then. Every reclaim step is attempted regardless, and the failures
+are reported together as `artifact.reclaim-incomplete`, carrying `id`, `reason`
+and the `residue` it did not clear. This is the one failure here that is not a
+refusal: the resource is already gone, so repeating the removal can only answer
+`artifact.not-found`. Report it; do not retry it.
+
+Its `reason` decides the next step, and the two differ:
+
+| `reason` | What happened | Next step |
+|---|---|---|
+| `step-failed` | The removal stands and the steps that succeeded stand; the named `residue` was not cleared. | Clear the named residue by hand. |
+| `pipeline-live` | The pipeline was started again after the refusal was judged and before the reclaim ran, so nothing was reclaimed and all four records are named as residue. | Stop the pipeline first. Clearing by hand while its job still runs discards the fencing epoch, which is what keeps that job from colliding with a later pipeline applied under the same id. |
 
 ## Capability matrix
 

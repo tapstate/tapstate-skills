@@ -39,7 +39,10 @@ ids must also not shadow a Pipeline source id or a literal table name.
 
 A `source` owns a connector relationship. It has two roles:
 
-1. A read source declares `mode` and normally `tables`.
+1. A read source declares `mode`; omit `tables` by default so the connection can
+   be reused by multiple Pipelines. Add `tables` only when the user explicitly
+   says that this Source itself is restricted to a subset of tables (or when
+   preserving an existing Source-level allowlist).
 2. A connection supplier for `serve.sync` or `serve.push` may omit both.
 
 `connector` is required. `config` is the only dynamic DSL member boundary: its
@@ -56,7 +59,7 @@ The static source semantics are:
 | Field | Meaning |
 |---|---|
 | `mode` | `cdc`, `snapshot`, `stream`, `file`, or `api`; connector capability validation decides which pairings are legal. |
-| `tables` | A list of literal names, `/regular-expression/` selectors, or object-form table specifications. |
+| `tables` | An optional Source-level allowlist: literal names, `/regular-expression/` selectors, or object-form table specifications. It is not the place to record which tables one particular Pipeline synchronizes. |
 | `tables[].filter` | A source-row CEL predicate. Its column environment is discovered online, so offline validation does not type-check it. |
 | `tables[].pk` | An explicit primary-key override for a literal table. |
 | `tables[].options` | Per-table extension options. |
@@ -75,6 +78,14 @@ list and always refers to top-level `source` resources in the same workspace.
 The Pipeline wires inline or reusable transforms to an optional view and serve
 surface. It must produce an output through `view` or `serve`; merely naming a
 source is not a complete composition.
+
+Table scope belongs to the Pipeline. For each read stream, put the tables this
+Pipeline consumes in the first transform's `from`, the view/serve `from`, or a
+later transform's explicit `from` as appropriate. A Source with omitted
+`tables` supplies an open table universe; a Pipeline can then select different
+tables from that same Source without changing the Source definition. A
+Source-level `tables` list narrows that universe for every Pipeline that uses
+the Source and therefore requires explicit user intent.
 
 See `pipeline-semantics.md` for settings, stream addressing, transforms, views,
 and serving.

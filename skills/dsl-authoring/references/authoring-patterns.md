@@ -14,8 +14,10 @@ describing a workspace as executable.
 
 ## Create a workspace
 
-1. Capture the intended source connector, read mode, table set, transforms,
-   output connector, and delivery surface.
+1. Capture the intended source connector, read mode, Pipeline table set,
+   transforms, output connector, and delivery surface. Treat the Source as a
+   reusable connection and capture a separate Source-level table restriction
+   only if the user explicitly requests one.
 2. Resolve and verify the requested Tapstate workspace before any file or MCP
    operation. If the path cannot be verified, ask for it rather than probing the
    agent's current directory or an installed Skill directory. Then create kind
@@ -38,6 +40,11 @@ describing a workspace as executable.
 6. Omit `source.config` only when that live contract is unavailable. Mark the
    resulting config-free draft as not runnable.
 7. Create the Pipeline resource graph with explicit ids and `from` references.
+   Put the tables to synchronize in the Pipeline wiring. Do not copy a
+   Pipeline's table list into the Source unless the user said the Source itself
+   must expose only that subset. If the Source has no `tables`, use the literal
+   table names in the Pipeline's first upstream `from` (or an explicit regex
+   when the user requested dynamic selection).
 8. Choose only grammar-supported fields from `tapstate-v1.schema.json`.
 9. Check the requested graph against `runtime-support.md`.
 10. Run `tapstate validate path/to/workspace` and fix each coded error. When the

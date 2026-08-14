@@ -55,6 +55,11 @@ from:
   order: orders
 ```
 
+The table names in these Pipeline `from` clauses are the Pipeline's selection
+for this synchronization. Keep the Source reusable by omitting `source.tables`
+unless the user explicitly requires a Source-level allowlist; a Source-level
+allowlist constrains every Pipeline that references that Source.
+
 For streaming steps after the first, omitted `from` means the preceding step.
 An omitted `from` on an inline view or serve block also means the preceding
 transform, or the view for a serve block that follows one. Prefer explicit

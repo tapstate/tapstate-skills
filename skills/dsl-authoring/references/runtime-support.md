@@ -96,8 +96,11 @@ Its `reason` decides the next step, and the two differ:
 | `serve.push` | Push source, topic, format, and options validate. | Not executed by the DAG builder. |
 | Inline or reusable view | View wiring, tiered storage, and schema policy validate. | Not materialized or queried by the current data plane. Reusable view resolution is therefore also unavailable. |
 
-The `straight-cdc` and `filter-and-map` examples use the supported static shape.
-The `nested-document` example deliberately proves that grammar-valid nest
+The `straight-cdc` and `filter-and-map` examples use the grammar-valid reusable
+Source shape with Pipeline-level table selection. The pinned preview runtime may
+still reject an open Source table universe; report that runtime limitation rather
+than adding a Source allowlist that the user did not request. The
+`nested-document` example deliberately proves that grammar-valid nest
 authoring is distinct from runtime support and must be reported as unavailable
 on this preview.
 

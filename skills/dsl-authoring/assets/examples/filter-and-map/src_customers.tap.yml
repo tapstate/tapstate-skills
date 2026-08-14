@@ -3,4 +3,3 @@ kind: source
 id: src_customers
 connector: mysql
 mode: cdc
-tables: [customers]

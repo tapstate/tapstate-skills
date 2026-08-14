@@ -45,9 +45,9 @@ new contract.
    `<workspace-root>/view/`, or `<workspace-root>/serve/`. This is the Tapstate
    workspace layout that `tapstate new` initializes, not a project-binding or
    installer destination. Do not move existing files merely to change layout.
-3. Plan the complete resource graph: Source resources, the Pipeline and its
-   settings, Transform resources, and any Serve or View resources. Keep all
-   static DSL semantics inside this skill.
+3. Plan the complete resource graph: reusable Source connection definitions,
+   the Pipeline's table selection and settings, Transform resources, and any
+   Serve or View resources. Keep all static DSL semantics inside this skill.
 4. Apply the connector-configuration gate below before authoring a new Source
    or changing any `source.config` member.
 5. Author the remaining smallest complete change. For config-free static
@@ -102,8 +102,12 @@ exploratory command from becoming a substitute for a required authoring step.
 
 ## Handle Each Task Mode
 
-- **Create**: Elicit source and destination intent, capture mode, tables, stream
-  shape, transforms, and serving needs, then produce the full referenced graph.
+- **Create**: Elicit source and destination intent, capture mode, the tables
+  this Pipeline should consume, stream shape, transforms, and serving needs,
+  then produce the full referenced graph. Keep Source definitions reusable:
+  omit `source.tables` unless the user explicitly restricts that Source to a
+  subset of tables; put the requested table selection in Pipeline `from`
+  wiring.
 - **Modify**: Load the whole affected graph, retain unrelated content, preserve
   opaque connector configuration, and check downstream references after edits.
 - **Explain**: Trace resources and streams in execution order. Distinguish field
@@ -127,6 +131,10 @@ static catalog of those member names, defaults, constraints, or secret flags.
   connector and the user-supplied structured config. It validates against the
   current connector contract and returns canonical Source YAML without creating
   an artifact or audit record.
+- A request to synchronize particular tables is Pipeline intent, not Source
+  scope. Do not add those table names to the new Source just because they occur
+  in the request; leave `source.tables` absent unless the user explicitly says
+  that the Source itself must expose only those tables.
 - Treat a coded `source_draft` contract error as an authoritative stop for that
   Source. Report the exact missing or invalid field and wait for corrected input;
   do not guess a connector key, create a config-free fallback, or continue to

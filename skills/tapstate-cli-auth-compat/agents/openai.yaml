@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tapstate CLI Auth Compatibility"
+  short_description: "Verify legacy CLI auth compatibility"
+  default_prompt: "Use $tapstate-cli-auth-compat to verify a legacy CLI against a candidate Tapstate server."

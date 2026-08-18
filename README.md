@@ -28,6 +28,11 @@ PromptScript. The `skills` command fetches this Git repository. This repository
 is not an npm package and intentionally has no `package.json`. Git commits and
 tags identify published revisions.
 
+The collection also includes `tapstate-cli-auth-compat`, which invokes the
+versioned `tools/verify-cli-auth-compat.sh` script from a Tapstate checkout to
+verify a legacy CLI against a candidate server. It does not bundle a second
+copy of the verifier.
+
 ## Native plugin
 
 Use the native marketplace when host-specific plugin updates are preferred:

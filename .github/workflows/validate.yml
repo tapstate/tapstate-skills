@@ -207,39 +207,47 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ ! -f skills/dsl-authoring/README.md ]]
           mapfile -t manifests < <(find skills -mindepth 2 -maxdepth 2 -type f -name SKILL.md -print | sort)
-          [[ "${#manifests[@]}" -eq 1 ]]
-          [[ "${manifests[0]}" == "skills/dsl-authoring/SKILL.md" ]]
+          [[ "${#manifests[@]}" -gt 0 ]]
           npx --yes skills add . --list | tee /tmp/skills-list.txt
-          grep -q 'dsl-authoring' /tmp/skills-list.txt
           stage="$(mktemp -d)"
           trap 'rm -rf "$stage"' EXIT
           git init --quiet "$stage/project"
-          (
-            cd "$stage/project"
-            npx --yes skills add "$GITHUB_WORKSPACE" \
-              --skill dsl-authoring --agent codex --copy --yes
-          )
-          installed="$stage/project/.agents/skills/dsl-authoring"
-          [[ -f "$installed/SKILL.md" ]]
-          diff -ru skills/dsl-authoring "$installed"
+          for manifest in "${manifests[@]}"; do
+            skill="${manifest#skills/}"
+            skill="${skill%/SKILL.md}"
+            [[ ! -f "skills/$skill/README.md" ]]
+            grep -q "$skill" /tmp/skills-list.txt
+            (
+              cd "$stage/project"
+              npx --yes skills add "$GITHUB_WORKSPACE" \
+                --skill "$skill" --agent codex --copy --yes
+            )
+            installed="$stage/project/.agents/skills/$skill"
+            [[ -f "$installed/SKILL.md" ]]
+            diff -ru "skills/$skill" "$installed"
+          done
 
       - name: Verify scoped global installation
         shell: bash
         run: |
           set -euo pipefail
+          mapfile -t manifests < <(find skills -mindepth 2 -maxdepth 2 -type f -name SKILL.md -print | sort)
           log="$(mktemp)"
           trap 'rm -f "$log"' EXIT
-          npx --yes skills add "$GITHUB_WORKSPACE" \
-            --skill dsl-authoring \
-            --agent claude-code codex cursor antigravity-cli \
-            --global --yes 2>&1 | tee "$log"
-          if grep -qi 'PromptScript' "$log"; then
-            echo "::error::Scoped global installation attempted PromptScript."
-            exit 1
-          fi
-          [[ -f "$HOME/.agents/skills/dsl-authoring/SKILL.md" ]]
+          for manifest in "${manifests[@]}"; do
+            skill="${manifest#skills/}"
+            skill="${skill%/SKILL.md}"
+            npx --yes skills add "$GITHUB_WORKSPACE" \
+              --skill "$skill" \
+              --agent claude-code codex cursor antigravity-cli \
+              --global --yes 2>&1 | tee "$log"
+            if grep -qi 'PromptScript' "$log"; then
+              echo "::error::Scoped global installation attempted PromptScript."
+              exit 1
+            fi
+            [[ -f "$HOME/.agents/skills/$skill/SKILL.md" ]]
+          done
 
       - name: Reject config and secret material in examples
         shell: bash

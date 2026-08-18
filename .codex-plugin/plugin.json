@@ -1,7 +1,7 @@
 {
   "name": "tapstate-skills",
-  "version": "1.0.12",
-  "description": "Tapstate Agent Skills for authoring and operating tapstate/v1 workspaces.",
+  "version": "1.0.13",
+  "description": "Tapstate Agent Skills for authoring resources and verifying CLI authentication compatibility.",
   "author": {
     "name": "Tapstate",
     "url": "https://github.com/tapstate"
@@ -17,8 +17,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Tapstate Skills",
-    "shortDescription": "Author and validate Tapstate DSL workspaces",
-    "longDescription": "Tapstate Skills packages DSL authoring and validation workflows for tapstate/v1 workspaces.",
+    "shortDescription": "Author Tapstate DSL and verify CLI compatibility",
+    "longDescription": "Tapstate Skills packages DSL authoring and CLI authentication compatibility workflows.",
     "developerName": "Tapstate",
     "category": "Developer Tools",
     "capabilities": [
@@ -28,7 +28,8 @@
     "websiteURL": "https://github.com/tapstate/tapstate-skills",
     "defaultPrompt": [
       "Author a Tapstate DSL workspace.",
-      "Validate this Tapstate workspace."
+      "Validate this Tapstate workspace.",
+      "Verify legacy CLI authentication compatibility."
     ],
     "brandColor": "#007F5F"
   }

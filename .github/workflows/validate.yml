@@ -25,7 +25,14 @@ jobs:
       TAPSTATE_CLI_VERSION: 0.1.0
       TAPSTATE_CLI_LINUX_X64_SHA256: 1ff1cb12e9d4b95e3153dff21bc23843f4829f17f572a59b46ec4518d20dc94b
       TAPSTATE_SCHEMA_SHA256: 7fb7613b8da4b7757d4907e0e0d16ccf7baae3fcc3469492aff1ed98b1d902a7
-      CJK_PATTERN: '[\x{2e80}-\x{303f}\x{3040}-\x{30ff}\x{3100}-\x{318f}\x{31a0}-\x{31ef}\x{31f0}-\x{31ff}\x{3400}-\x{4dbf}\x{4e00}-\x{9fff}\x{a960}-\x{a97f}\x{ac00}-\x{d7af}\x{d7b0}-\x{d7ff}\x{f900}-\x{faff}\x{fe10}-\x{fe1f}\x{fe30}-\x{fe4f}\x{ff00}-\x{ffef}\x{1aff0}-\x{1afff}\x{1b000}-\x{1b16f}\x{1f200}-\x{1f2ff}\x{20000}-\x{323af}]'
+      # Pinned separately from TAPSTATE_COMMIT above, and that is not an oversight. That pin carries
+      # the DSL schema and the CLI; the two files below are a character check. Moving one pin to
+      # reach the other's artifact would force this repository to adopt every schema change in
+      # between - 648 commits of it, when this was written. Two pins are two things to re-pin; one
+      # pin is every unrelated artifact forced to move together.
+      TAPSTATE_CHARSET_COMMIT: 96b59d355be325d9334d8a6c0c7af7ad9b3a7602
+      TAPSTATE_NO_CJK_SHA256: e7092f918ba169981697e56ed05be528029500cd5d5854fd84f5879fbe9ebfbc
+      TAPSTATE_CHARSET_ALLOWLIST_SHA256: 7c00f022aae813894efedde9d2f7fcffd28e4dbbdb6921b12ddb083c8534e0d3
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -44,52 +51,68 @@ jobs:
           schema_sha256=${TAPSTATE_SCHEMA_SHA256}
           cli_version=${TAPSTATE_CLI_VERSION}
           cli_linux_x64_sha256=${TAPSTATE_CLI_LINUX_X64_SHA256}
+          charset_commit=${TAPSTATE_CHARSET_COMMIT}
+          no_cjk_sha256=${TAPSTATE_NO_CJK_SHA256}
+          charset_allowlist_sha256=${TAPSTATE_CHARSET_ALLOWLIST_SHA256}
           EOF
           diff -u "$expected" upstream.lock
 
-      - name: Reject CJK in tracked files
+      # THE SAME DECISION, not merely the same list. Two repositories enforcing one rule used to
+      # spell it twice: this one enumerated 18 forbidden Unicode ranges, tapstate enumerated 5, and
+      # they gave different answers - measured 2026-08-30, this pattern caught Japanese kana and
+      # Korean hangul that tapstate let through, while both let through a Cyrillic look-alike, a
+      # zero-width space and a right-to-left override. Reconciling only the character list would not
+      # have found that: a locale, a regex assembly or a grep flag differing anywhere gives a
+      # different answer. So the script is vendored beside the list and both are compared.
+      #
+      # The list is now what is ALLOWED rather than what is forbidden, which is what makes an
+      # unknown character a red instead of a silent pass.
+      - name: Check out the pinned Tapstate character check
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: tapstate/tapstate
+          ref: ${{ env.TAPSTATE_CHARSET_COMMIT }}
+          path: .upstream/tapstate-charset
+          sparse-checkout: |
+            .github/scripts/no-cjk.sh
+            .github/charset-allowlist.txt
+          sparse-checkout-cone-mode: false
+
+      # Before either file is trusted to decide anything. Editing the vendored copy here reddens on
+      # the hash; tapstate editing its own reddens when the pin is next raised, which is a visible
+      # delay and the price of a hermetic run.
+      - name: Verify the vendored character check against pinned Tapstate
         shell: bash
         run: |
           set -euo pipefail
-          probe="$(printf '\xE4\xB8\xAD')"
-          grep -qP "$CJK_PATTERN" <<< "$probe"
-          if grep -qP "$CJK_PATTERN" <<< "Tapstate"; then
-            echo "::error::CJK detector rejected an ASCII control value."
-            exit 1
-          fi
-          if git grep -nP "$CJK_PATTERN" -- .; then
-            echo "::error::CJK characters found in this English-only repository."
-            exit 1
-          fi
+          upstream=.upstream/tapstate-charset
+          echo "${TAPSTATE_NO_CJK_SHA256}  .github/scripts/no-cjk.sh" | sha256sum --check --strict
+          echo "${TAPSTATE_NO_CJK_SHA256}  ${upstream}/.github/scripts/no-cjk.sh" | sha256sum --check --strict
+          echo "${TAPSTATE_CHARSET_ALLOWLIST_SHA256}  .github/charset-allowlist.txt" | sha256sum --check --strict
+          echo "${TAPSTATE_CHARSET_ALLOWLIST_SHA256}  ${upstream}/.github/charset-allowlist.txt" | sha256sum --check --strict
+          cmp "${upstream}/.github/scripts/no-cjk.sh" .github/scripts/no-cjk.sh
+          cmp "${upstream}/.github/charset-allowlist.txt" .github/charset-allowlist.txt
 
-      - name: Reject CJK in change metadata
+      - name: Every character in tracked files is on the allow-list
+        shell: bash
+        run: bash .github/scripts/no-cjk.sh files
+
+      # A commit message is repository content: one written in another language lands in main's
+      # history verbatim and no merge launders it, so rewriting it afterwards means a force-push.
+      #
+      # What this step no longer reads is the pull request's title and body. Those are
+      # conversational text, and a check enforcing the project's working language over repository
+      # content has no business reading what somebody typed into a comment field - it turns a habit
+      # into a door for the people least able to argue with it. The titles and bodies WE send are
+      # refused by the scripts that publish them, before the text is ever public.
+      - name: Every character in the commit messages is on the allow-list
         shell: bash
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          set -euo pipefail
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            range="origin/${{ github.base_ref }}..HEAD"
-          elif git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null; then
-            range="${{ github.event.before }}..${{ github.sha }}"
-          else
-            range="${{ github.sha }}"
-          fi
-
-          messages="$(git log --format='%H %B' "$range")"
-          if [[ -n "$messages" ]] && grep -qP "$CJK_PATTERN" <<< "$messages"; then
-            echo "::error::CJK characters found in commit messages."
-            exit 1
-          fi
-          if [[ -n "${PR_TITLE:-}" ]] && grep -qP "$CJK_PATTERN" <<< "$PR_TITLE"; then
-            echo "::error::CJK characters found in the pull request title."
-            exit 1
-          fi
-          if [[ -n "${PR_BODY:-}" ]] && grep -qP "$CJK_PATTERN" <<< "$PR_BODY"; then
-            echo "::error::CJK characters found in the pull request body."
-            exit 1
-          fi
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          EVENT_SHA: ${{ github.sha }}
+        run: bash .github/scripts/no-cjk.sh messages
 
       - name: Verify required repository surfaces
         shell: bash

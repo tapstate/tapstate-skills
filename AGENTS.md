@@ -32,6 +32,14 @@ a Skill-local README.
 - Update the Tapstate commit, schema checksum, CLI version, release-archive
   checksum, semantic references, runtime-support notes, and validated examples
   together when the upstream contract changes.
+- The character check is vendored from Tapstate too, and pinned SEPARATELY from
+  the line above. `.github/scripts/no-cjk.sh` and `.github/charset-allowlist.txt`
+  are byte-for-byte copies from `charset_commit` in `upstream.lock`; the workflow
+  refuses to run either until both match. Copy them, never edit them here - a
+  change belongs in Tapstate, and arrives by raising `charset_commit` and the two
+  checksums together. They are a separate pin because they move for different
+  reasons than the schema does, and folding them into one pin would force this
+  repository to adopt every unrelated schema change in between.
 - Treat connector-specific members inside `source.config` as the only dynamic
   DSL member boundary. Obtain them from the live connector catalog through MCP.
 - Never invent configuration keys, defaults, secret values, or connector

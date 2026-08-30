@@ -30,8 +30,8 @@ jobs:
       # reach the other's artifact would force this repository to adopt every schema change in
       # between - 648 commits of it, when this was written. Two pins are two things to re-pin; one
       # pin is every unrelated artifact forced to move together.
-      TAPSTATE_CHARSET_COMMIT: 7aba95151a37e4ad3878355ad850a536fb1751ed
-      TAPSTATE_NO_CJK_SHA256: 535addb91d4f462acdbdbcc111cca245aad45dcdbf3edd2a3ed0c8fbcb8af934
+      TAPSTATE_CHARSET_COMMIT: 5178dfb6fc0f523c04baa2957507deb679057dd2
+      TAPSTATE_NO_CJK_SHA256: 9bd0327deacc7aa45923b2f38226905a68b7f5ba0471f530f98e43542b08acab
       TAPSTATE_CHARSET_ALLOWLIST_SHA256: 7c00f022aae813894efedde9d2f7fcffd28e4dbbdb6921b12ddb083c8534e0d3
     steps:
       - name: Check out repository

@@ -30,8 +30,8 @@ jobs:
       # reach the other's artifact would force this repository to adopt every schema change in
       # between - 648 commits of it, when this was written. Two pins are two things to re-pin; one
       # pin is every unrelated artifact forced to move together.
-      TAPSTATE_CHARSET_COMMIT: 96b59d355be325d9334d8a6c0c7af7ad9b3a7602
-      TAPSTATE_NO_CJK_SHA256: e7092f918ba169981697e56ed05be528029500cd5d5854fd84f5879fbe9ebfbc
+      TAPSTATE_CHARSET_COMMIT: 97776fdb9aeffceb55a614b9dc742fa1571c8418
+      TAPSTATE_NO_CJK_SHA256: 64b5c9a81253bf779a5c0d0755133b53832e4d8bcc272c1666e6e0e9ea6ba84f
       TAPSTATE_CHARSET_ALLOWLIST_SHA256: 7c00f022aae813894efedde9d2f7fcffd28e4dbbdb6921b12ddb083c8534e0d3
     steps:
       - name: Check out repository
@@ -92,6 +92,16 @@ jobs:
           echo "${TAPSTATE_CHARSET_ALLOWLIST_SHA256}  ${upstream}/.github/charset-allowlist.txt" | sha256sum --check --strict
           cmp "${upstream}/.github/scripts/no-cjk.sh" .github/scripts/no-cjk.sh
           cmp "${upstream}/.github/charset-allowlist.txt" .github/charset-allowlist.txt
+
+      # The invariant, as a machine check rather than a habit: this check reads tracked files and
+      # commit messages, and nothing else. The steps that read the pull request title and body were
+      # removed from here and from tapstate, and nothing stopped one coming back. The mode is part
+      # of the vendored script, so both repositories make the statement with the same code; it
+      # locates the workflow by looking for whichever one runs the check, which is why it works
+      # here without being told this file's name.
+      - name: This check is still wired to read nothing but files and commit messages
+        shell: bash
+        run: bash .github/scripts/no-cjk.sh workflows
 
       - name: Every character in tracked files is on the allow-list
         shell: bash

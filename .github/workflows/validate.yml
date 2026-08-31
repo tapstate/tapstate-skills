@@ -30,6 +30,12 @@ jobs:
       # reach the other's artifact would force this repository to adopt every schema change in
       # between - 648 commits of it, when this was written. Two pins are two things to re-pin; one
       # pin is every unrelated artifact forced to move together.
+      # This commit is NOT on tapstate's default branch. It is the head of the branch that
+      # introduces the two files below, and they exist nowhere else there yet. So until that
+      # branch merges and this pin is raised to the resulting commit on main, tapstate's
+      # ws/repo-hygiene-gates must not be deleted: a squash merge leaves this SHA unreachable,
+      # the checkout below asks for it by SHA, and every run here would go red - authored by
+      # people who changed nothing, which is the outcome pinning exists to prevent.
       TAPSTATE_CHARSET_COMMIT: 5178dfb6fc0f523c04baa2957507deb679057dd2
       TAPSTATE_NO_CJK_SHA256: 9bd0327deacc7aa45923b2f38226905a68b7f5ba0471f530f98e43542b08acab
       TAPSTATE_CHARSET_ALLOWLIST_SHA256: 7c00f022aae813894efedde9d2f7fcffd28e4dbbdb6921b12ddb083c8534e0d3
@@ -99,6 +105,12 @@ jobs:
       # of the vendored script, so both repositories make the statement with the same code; it
       # locates the workflow by looking for whichever one runs the check, which is why it works
       # here without being told this file's name.
+      #
+      # Scope, in this repository specifically: there is one workflow, so "whichever workflow
+      # runs the check" is the whole of CI here. A step that legitimately needs a pull
+      # request's title or body - a template check, a title lint - belongs in a workflow file
+      # of its own, which this mode does not look at. Added to THIS file it reddens the
+      # character check instead, naming a step that has nothing to do with characters.
       - name: This check is still wired to read nothing but files and commit messages
         shell: bash
         run: bash .github/scripts/no-cjk.sh workflows

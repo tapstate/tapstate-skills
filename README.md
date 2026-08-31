@@ -88,6 +88,13 @@ generated schema checksum, CLI version, and verified release-archive checksum
 used to test the Skill. The vendored schema is copied byte-for-byte from that
 Tapstate commit and remains the machine-readable grammar authority.
 
+It also records a second, independent Tapstate pin for the character check this
+repository runs over its own tracked files and commit messages: that check and
+the list of characters English typesetting here may use are both vendored
+byte-for-byte from Tapstate, so one rule is spelled once rather than once per
+repository. It is pinned separately because it moves for different reasons than
+the schema does.
+
 ## Contributing
 
 Keep all tracked files, comments, commit messages, and pull request text in

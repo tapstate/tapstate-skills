@@ -9,6 +9,8 @@ transforms:
     fields:
       region_key: $id
       region_name: $name
+      id: false
+      name: false
 
   - id: customer_with_orders
     type: nest

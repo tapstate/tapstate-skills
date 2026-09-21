@@ -3,13 +3,19 @@ kind: pipeline
 id: customer_documents
 source: src_commerce
 transforms:
+  - id: region_fields
+    type: map
+    from: [regions]
+    fields:
+      region_key: $id
+      region_name: $name
+
   - id: customer_with_orders
     type: nest
     from:
       customer: customers
       order: orders
-    primary_key: customer_id
-    order: main_first
+      region: region_fields
     root:
       from: customer
       key: [customer_id]
@@ -21,9 +27,20 @@ transforms:
           as: array
           path: orders
           arrayKey: [order_id]
-          trackJoinKeyChanges: true
+          trackKeyChanges: true
+        - from: region
+          on:
+            region_key: region_id
+          as: flat
+          key: [region_key]
+
+  - id: public_customer_document
+    type: map
+    from: customer_with_orders
+    fields:
+      region_key: false
 serve:
-  from: customer_with_orders
+  from: public_customer_document
   sync:
     - id: customer_documents
       source: tgt_documents

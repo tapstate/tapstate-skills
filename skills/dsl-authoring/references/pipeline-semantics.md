@@ -138,13 +138,21 @@ the parent upsert key; `root.mode` declares its write shape. Each `embed`:
 
 - selects a child alias with `from`;
 - maps child fields to parent fields through `on`;
-- chooses `array` or `object` with `as`;
-- writes at `path`;
-- may define `arrayKey`, `ignoreUpdates`, and `trackJoinKeyChanges`;
+- chooses `array`, `object`, or `flat` with `as`;
+- writes array/object at `path`; flat must omit both `path` and `arrayKey` and merges one row into the parent;
+- may define `key`, `arrayKey` for arrays, `ignoreUpdates`, and `trackKeyChanges`;
 - may recursively contain more `embed` entries.
 
-`primary_key` and `order: main_first|sub_first` provide additional stateful
-materialization controls.
+Flat supports one-to-one children and many-to-one shared referenced rows. Several flat siblings may
+merge into one parent when their output fields are disjoint. A second live row under one parent is a
+one-to-many relationship and stops with `nest.flat-cardinality-violation`; use `array` for that shape.
+Fields may not overlap the parent, another flat child, or an object/array path. Discovered models catch
+known conflicts before start and actual rows catch dynamic or model-less conflicts at runtime with
+`nest.flat-field-conflict`. Rename or drop fields in an upstream map, retaining any join/key fields until
+after Nest has used them.
+
+`primary_key`, `order: main_first|sub_first`, capacity settings, and key-tracking switches provide
+additional stateful materialization controls.
 
 ### Join
 

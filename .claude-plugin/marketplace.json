@@ -9,7 +9,7 @@
     {
       "name": "tapstate-skills",
       "description": "Installs Tapstate Agent Skills, including DSL authoring and CLI authentication compatibility verification.",
-      "version": "1.0.13",
+      "version": "1.0.14",
       "category": "development",
       "source": "./",
       "homepage": "https://github.com/tapstate/tapstate-skills"

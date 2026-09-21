@@ -1,7 +1,7 @@
 # Current Preview Runtime Support
 
 This matrix is pinned to Tapstate commit
-`f65260270fb269047f58cba53288dbfa91840ec5`. The generated schema describes the
+`ee51328bf0d52923caafaf1404bfe5eff887129f`. The generated schema describes the
 complete `tapstate/v1` grammar; this file describes the narrower runtime wired at
 that commit. Update both this matrix and the repository upstream lock when the
 baseline changes.
@@ -87,7 +87,7 @@ Its `reason` decides the next step, and the two differ:
 | Inline map | Rename, drop, literal, and `=CEL` rules validate. | Supported over `after`; deletes and DDL bypass. Unlisted fields pass through. |
 | Inline JavaScript | Script bodies validate structurally. | Supported by the stateless transform adapter. |
 | Inline union | Multi-input list wiring validates. | Supported as a single-lane passthrough fan-in. |
-| Inline nest | Alias wiring and nest trees validate. | Rejected by the linear DAG builder as a stateful transform. |
+| Inline nest | Alias wiring and recursive array, object, and pathless flat children validate. | Supported. Flat accepts one-to-one and many-to-one; a live one-to-many match stops with `nest.flat-cardinality-violation`. Known model collisions are refused before start and actual-row collisions stop with `nest.flat-field-conflict`. |
 | Inline join | Alias wiring, engine, and SQL validate. | Rejected by the linear DAG builder as a stateful transform. |
 | Transform `use` | Reusable transform definitions and use sites validate. | Unresolved use steps are rejected; no definition-resolution phase is wired. |
 | Inline `serve.sync` | Sync elements, modes, DDL, rename, and options validate. | Supported as sink vertices. Multiple sync elements fan out from the same upstream. |
@@ -100,9 +100,15 @@ The `straight-cdc` and `filter-and-map` examples use the grammar-valid reusable
 Source shape with Pipeline-level table selection. The pinned preview runtime may
 still reject an open Source table universe; report that runtime limitation rather
 than adding a Source allowlist that the user did not request. The
-`nested-document` example deliberately proves that grammar-valid nest
-authoring is distinct from runtime support and must be reported as unavailable
-on this preview.
+`nested-document` example combines an array child with a many-to-one flat child
+and is executable by the pinned source runtime once connector config,
+discovery, target support, and online validation have succeeded.
+
+The independently pinned released CLI is v0.5.0 and predates flat embeds. It
+continues to validate the compatibility examples, while CI builds the exact
+Tapstate source commit above to validate all examples. An installed v0.5.0 CLI
+will reject `as: flat`; use a build containing the pinned commit or a later
+release. Do not reinterpret that version mismatch as an error in the workspace.
 
 ## Settings and options
 

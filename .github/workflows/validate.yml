@@ -381,8 +381,8 @@ jobs:
             cd "$stage"
             tar -xzf "$asset"
           )
-          cli="$stage/tapstate"
-          [[ -x "$cli" ]]
+          cli="$(find "$stage" -type f -path '*/bin/tapstate' -print -quit)"
+          [[ -n "$cli" && -x "$cli" ]]
           [[ "$($cli --version)" == "tapstate ${TAPSTATE_CLI_VERSION}" ]]
           while IFS= read -r example; do
             "$cli" validate "$example"

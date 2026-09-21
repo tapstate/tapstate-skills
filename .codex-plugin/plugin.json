@@ -1,6 +1,6 @@
 {
   "name": "tapstate-skills",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Tapstate Agent Skills for authoring resources and verifying CLI authentication compatibility.",
   "author": {
     "name": "Tapstate",

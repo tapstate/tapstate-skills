@@ -1,7 +1,7 @@
 # Current Preview Runtime Support
 
 This matrix is pinned to Tapstate commit
-`ee51328bf0d52923caafaf1404bfe5eff887129f`. The generated schema describes the
+`a03aa7265be765b9a48dd2464e2e987f24ada60e`. The generated schema describes the
 complete `tapstate/v1` grammar; this file describes the narrower runtime wired at
 that commit. Update both this matrix and the repository upstream lock when the
 baseline changes.

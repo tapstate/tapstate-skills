@@ -21,10 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LC_ALL: C.UTF-8
-      TAPSTATE_COMMIT: ee51328bf0d52923caafaf1404bfe5eff887129f
+      TAPSTATE_COMMIT: a03aa7265be765b9a48dd2464e2e987f24ada60e
       TAPSTATE_CLI_VERSION: 0.5.0
       TAPSTATE_CLI_LINUX_X64_SHA256: 63bbf06f0087a69e8d148f371fd7bce2ce39d2e06c7e8a12330638471370166c
-      TAPSTATE_SCHEMA_SHA256: 4284f4bd0fa6d34f47a628c7075dd7a71f0beeeadc8d6d3c9b0069add7ccd75f
+      TAPSTATE_SCHEMA_SHA256: 9a33ccb0db2900f78d5aa2b8674cf8d9a327a66da84b45a4393e9c85421036b9
       # Pinned separately from TAPSTATE_COMMIT above, and that is not an oversight. That pin carries
       # the DSL schema and the CLI; the two files below are a character check. Moving one pin to
       # reach the other's artifact would force this repository to adopt every schema change in

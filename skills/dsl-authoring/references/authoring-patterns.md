@@ -124,9 +124,13 @@ to avoid the current numeric overload limitation.
 
 Model parent and child streams as aliases in `from`, select the parent with
 `root.from`, and make each `embed.on` mapping point from child fields to parent
-fields. Use `arrayKey` for stable array element identity. The
-`nested-document` asset is grammar-valid but is not executable by the pinned
-preview runtime.
+fields. Use `arrayKey` for stable array element identity. Use `as: flat`
+without `path` or `arrayKey` when one child row should contribute fields
+directly to the parent. Flat accepts one-to-one and many-to-one relationships,
+refuses one-to-many at runtime, and never resolves field collisions by
+declaration order. Map child fields to disjoint public names before Nest and
+drop internal join/key names after it. The `nested-document` asset combines an
+array child with a many-to-one flat child.
 
 ### Reusable logic
 

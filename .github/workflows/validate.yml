@@ -21,10 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LC_ALL: C.UTF-8
-      TAPSTATE_COMMIT: f65260270fb269047f58cba53288dbfa91840ec5
-      TAPSTATE_CLI_VERSION: 0.1.0
-      TAPSTATE_CLI_LINUX_X64_SHA256: 1ff1cb12e9d4b95e3153dff21bc23843f4829f17f572a59b46ec4518d20dc94b
-      TAPSTATE_SCHEMA_SHA256: 7fb7613b8da4b7757d4907e0e0d16ccf7baae3fcc3469492aff1ed98b1d902a7
+      TAPSTATE_COMMIT: a03aa7265be765b9a48dd2464e2e987f24ada60e
+      TAPSTATE_CLI_VERSION: 0.5.0
+      TAPSTATE_CLI_LINUX_X64_SHA256: 63bbf06f0087a69e8d148f371fd7bce2ce39d2e06c7e8a12330638471370166c
+      TAPSTATE_SCHEMA_SHA256: 9a33ccb0db2900f78d5aa2b8674cf8d9a327a66da84b45a4393e9c85421036b9
       # Pinned separately from TAPSTATE_COMMIT above, and that is not an oversight. That pin carries
       # the DSL schema and the CLI; the two files below are a character check. Moving one pin to
       # reach the other's artifact would force this repository to adopt every schema change in
@@ -319,7 +319,8 @@ jobs:
           grep -qE '^[[:space:]]+display_name:[[:space:]]+"=' "$mapped"
           grep -qE '^[[:space:]]+region:[[:space:]]+"=' "$mapped"
           grep -qF '| Inline nest |' "$runtime"
-          grep -qF 'Rejected by the linear DAG builder as a stateful transform.' "$runtime"
+          grep -qF '`nest.flat-cardinality-violation`' "$runtime"
+          grep -qF 'as: flat' skills/dsl-authoring/assets/examples/nested-document/pipeline.tap.yml
 
       - name: Check out pinned Tapstate source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -338,7 +339,35 @@ jobs:
           echo "${TAPSTATE_SCHEMA_SHA256}  ${generated}" | sha256sum --check --strict
           cmp "$generated" "$vendored"
 
-      - name: Validate examples with the pinned Tapstate CLI
+      - name: Set up Java for the pinned Tapstate source CLI
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: .upstream/tapstate/pom.xml
+
+      # The schema pin can move ahead of the latest published binary. Build the exact source pin so
+      # every example is still validated by Tapstate's parser and semantic workspace checks rather
+      # than by a schema-only approximation.
+      - name: Validate every example with the pinned Tapstate source CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd .upstream/tapstate
+            mvn -B -pl cli -am -DskipTests -DskipITs package
+          )
+          cli=".upstream/tapstate/cli/target/cli-${TAPSTATE_CLI_VERSION}.jar"
+          [[ -f "$cli" ]]
+          while IFS= read -r example; do
+            java -jar "$cli" validate "$example"
+          done < <(find skills/dsl-authoring/assets/examples -mindepth 1 -maxdepth 1 -type d -print | sort)
+
+      # Keep the independently published artifact pin honest as well. v0.5.0 predates flat embeds,
+      # so it validates the two compatibility examples; runtime-support.md says why the flat example
+      # requires the source pin until a later release exists.
+      - name: Validate compatibility examples with the pinned released CLI
         shell: bash
         run: |
           set -euo pipefail
@@ -352,9 +381,10 @@ jobs:
             cd "$stage"
             tar -xzf "$asset"
           )
-          cli="$stage/tapstate"
-          [[ -x "$cli" ]]
+          cli="$(find "$stage" -type f -path '*/bin/tapstate' -print -quit)"
+          [[ -n "$cli" && -x "$cli" ]]
           [[ "$($cli --version)" == "tapstate ${TAPSTATE_CLI_VERSION}" ]]
           while IFS= read -r example; do
             "$cli" validate "$example"
-          done < <(find skills/dsl-authoring/assets/examples -mindepth 1 -maxdepth 1 -type d -print | sort)
+          done < <(find skills/dsl-authoring/assets/examples -mindepth 1 -maxdepth 1 -type d \
+            ! -name nested-document -print | sort)

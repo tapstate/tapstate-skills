@@ -1,6 +1,6 @@
 {
   "name": "tapstate-skills",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "Tapstate Agent Skills for authoring resources and verifying CLI authentication compatibility.",
   "author": {
     "name": "Tapstate",
@@ -27,8 +27,8 @@
     ],
     "websiteURL": "https://github.com/tapstate/tapstate-skills",
     "defaultPrompt": [
-      "Author a Tapstate DSL workspace.",
-      "Validate this Tapstate workspace.",
+      "Author a Tapstate DSL project.",
+      "Validate this Tapstate project.",
       "Verify legacy CLI authentication compatibility."
     ],
     "brandColor": "#007F5F"

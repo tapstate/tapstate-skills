@@ -21,7 +21,7 @@ creation, offline validation, `connection_test` and
 `artifact_validate`, complete-closure `artifact_apply`, then optional Pipeline
 start. Sink-only connection suppliers are not discovered. Fix discovery or
 validation diagnostics before applying. Do not apply a standalone Source as a
-substitute for workspace authoring.
+substitute for project authoring.
 
 MCP availability is established by the tools exposed to the current agent
 session. A local `tapstate validate` result, shell command, or file inspection
@@ -108,7 +108,14 @@ The independently pinned released CLI is v0.5.0 and predates flat embeds. It
 continues to validate the compatibility examples, while CI builds the exact
 Tapstate source commit above to validate all examples. An installed v0.5.0 CLI
 will reject `as: flat`; use a build containing the pinned commit or a later
-release. Do not reinterpret that version mismatch as an error in the workspace.
+release. Do not reinterpret that version mismatch as an error in the project.
+
+The pinned schema, source commit, and released CLI above predate projects and do
+not describe `project.tap.yml`. A CLI that predates projects may not recognize
+that file. Treat such a failure as a CLI version mismatch, not as an error in
+the project; a folder without `project.tap.yml` still works, with the project id
+defaulting to the folder name. Use a CLI release that supports projects before
+adding the file, and do not add it to the bundled examples.
 
 ## Settings and options
 

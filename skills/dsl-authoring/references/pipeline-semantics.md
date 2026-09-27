@@ -47,7 +47,7 @@ from: [orders, returns]
 ```
 
 `nest` and `join` require an explicit alias map. Body fields refer to aliases,
-not directly to workspace resources:
+not directly to project resources:
 
 ```yaml
 from:

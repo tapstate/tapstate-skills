@@ -2,14 +2,14 @@
 name: dsl-authoring
 description: >-
   Author, modify, explain, review, repair, and validate Tapstate tapstate/v1
-  workspaces, including Source, Pipeline, Transform, View, and Serve resources.
+  projects, including Source, Pipeline, Transform, View, and Serve resources.
   Use when creating or changing .tap.yml files, diagnosing DSL errors, tracing
   data-flow semantics, or preparing a pipeline for conditional online execution.
 ---
 
 # Tapstate DSL Authoring
 
-Build and maintain complete Tapstate workspaces while keeping connector-specific
+Build and maintain complete Tapstate projects while keeping connector-specific
 configuration behind a live metadata boundary. Treat the generated schema and
 Tapstate CLI behavior as authoritative contracts; never invent fields or errors.
 
@@ -18,7 +18,7 @@ Tapstate CLI behavior as authoritative contracts; never invent fields or errors.
 Read only the references needed for the current request:
 
 - Read `references/resource-model.md` before creating resources, changing
-  identities or references, or explaining workspace structure.
+  identities or references, or explaining project structure.
 - Read `references/pipeline-semantics.md` before authoring or changing Pipeline
   settings, transforms, stream wiring, Serve resources, or View resources.
 - Read `references/authoring-patterns.md` for create, modify, review, and repair
@@ -35,16 +35,18 @@ new contract.
 ## Follow The Authoring Workflow
 
 1. Determine whether the request is to create, modify, explain, review, repair,
-   validate, or run a workspace. Ask only for details that materially affect the
+   validate, or run a project. Ask only for details that materially affect the
    resource graph or data flow.
-2. Resolve the local Tapstate workspace from the request or the Tapstate CLI
-   workdir settings, then inspect every participating `.tap.yml` file. Never
-   resolve it relative to this installed Skill. For a new resource, create the
-   required kind directory under that workspace: `<workspace-root>/source/`,
-   `<workspace-root>/pipeline/`, `<workspace-root>/transform/`,
-   `<workspace-root>/view/`, or `<workspace-root>/serve/`. This is the Tapstate
-   workspace layout that `tapstate new` initializes, not a project-binding or
+2. Resolve the local Tapstate project from the request or the Tapstate CLI
+   project-root settings, then inspect every participating `.tap.yml` file.
+   Never resolve it relative to this installed Skill. For a new resource, create
+   the required kind directory under that project: `<project-root>/source/`,
+   `<project-root>/pipeline/`, `<project-root>/transform/`,
+   `<project-root>/view/`, or `<project-root>/serve/`. This is the Tapstate
+   project layout that `tapstate new` initializes, not a context binding or
    installer destination. Do not move existing files merely to change layout.
+   A new project also gets `<project-root>/project.tap.yml`, which declares only
+   the project identity; see `references/resource-model.md`.
 3. Plan the complete resource graph: reusable Source connection definitions,
    the Pipeline's table selection and settings, Transform resources, and any
    Serve or View resources. Keep all static DSL semantics inside this skill.
@@ -55,7 +57,7 @@ new contract.
    placed in the correct kind directory without an extra skeleton-and-rewrite
    cycle. Preserve existing names and IDs unless the requested change requires a
    migration, and update every affected reference together.
-6. Run `tapstate validate <workspace-path>` after writing. Repair errors from the
+6. Run `tapstate validate <project-path>` after writing. Repair errors from the
    coded CLI output, rerun validation, and report the exact remaining codes and
    locations if validation still fails. If the CLI is unavailable, state that
    validation was not run; never fabricate a result.
@@ -64,15 +66,19 @@ new contract.
 
 ## Keep The First Actions Deterministic
 
-Workspace resolution is a blocking gate for create, modify, and run requests:
+Project resolution is a blocking gate for create, modify, and run requests:
 
-1. Derive `<workspace-root>` from the path supplied by the user or from the
-   Tapstate CLI workdir settings. If the user identifies a current directory,
-   verify that directory itself; never substitute the installed Skill directory
-   or the agent process working directory.
+1. Derive `<project-root>` from the path supplied by the user or from the
+   Tapstate CLI project-root settings, in the CLI's own order: the
+   `-w/--workdir` flag, then `TAPSTATE_WORKDIR`, then the nearest enclosing
+   folder that contains `project.tap.yml`, then the legacy default `tap-work`.
+   If the user identifies a current directory, verify that directory itself or
+   its nearest enclosing `project.tap.yml` folder;
+   never substitute the installed Skill directory or the agent process working
+   directory.
 2. Verify the resolved root before creating files or calling MCP. If no root can
    be verified, ask for its path instead of probing unrelated directories.
-3. After verification, inspect only participating workspace files and then use
+3. After verification, inspect only participating project files and then use
    the shortest applicable operation sequence:
    `resolve -> inspect -> source_draft -> write -> author -> validate -> test/discover -> artifact_validate -> artifact_apply -> start/observe`.
 4. Do not run generic repository discovery, `git status`, generic CLI help,
@@ -90,14 +96,14 @@ Workspace resolution is a blocking gate for create, modify, and run requests:
    `connection_discover_schema` for every read Source before `artifact_validate`.
    Do not discover a sink-only connection supplier. After discovery succeeds,
    call `artifact_validate` immediately with the complete YAML closure. Fix its
-   diagnostics in the workspace and call it again before `artifact_apply`; do
+   diagnostics in the project and call it again before `artifact_apply`; do
    not insert generic shell or CLI exploration between these calls.
 8. Determine online capability from the current session's exposed MCP tool
    inventory. If a required tool is exposed, call it before reporting any
    server problem. Do not infer MCP reachability from a local CLI result, shell
    probe, file inspection, or a previous message.
 
-This gate keeps authoring work inside the requested workspace and prevents an
+This gate keeps authoring work inside the requested project and prevents an
 exploratory command from becoming a substitute for a required authoring step.
 
 ## Handle Each Task Mode
@@ -145,10 +151,10 @@ static catalog of those member names, defaults, constraints, or secret flags.
   the draft operation reports a connector-contract error, or the user asks to
   compare connectors.
 - Write the returned YAML directly to
-  `<workspace-root>/source/<id>.tap.yml`, creating that workspace kind directory
+  `<project-root>/source/<id>.tap.yml`, creating that project kind directory
   when needed. Do not first write a config-free Source and then revise it. The
   returned document may contain user-supplied secret values; write it to the
-  requested local workspace but do not reproduce those values in chat, logs,
+  requested local project but do not reproduce those values in chat, logs,
   diffs, or summaries.
 - Never infer config keys from model memory, old examples, another connector,
   or a connector name. Never invent defaults or secret values.
@@ -170,7 +176,7 @@ uncalled.
 ## Interpret Validation Narrowly
 
 A successful `tapstate validate` result proves only that the installed CLI
-accepted the local workspace under its grammar and semantic checks. It does not
+accepted the local project under its grammar and semantic checks. It does not
 prove any of the following:
 
 - canonical serialization or formatting;
@@ -179,7 +185,7 @@ prove any of the following:
 - credential validity or external connectivity;
 - successful online apply, start, or data processing.
 
-Do not call a workspace runnable until `references/runtime-support.md` permits
+Do not call a project runnable until `references/runtime-support.md` permits
 the used features, live connector configuration is complete, and the relevant
 online checks have actually succeeded.
 
@@ -198,7 +204,7 @@ capability, not a guessed Server outage.
 
 When suitable capabilities exist, complete the guarded sequence: draft each
 configured Source through `source_draft`, write the returned YAML into the local
-workspace, validate locally, test and discover every read Source, call
+project, validate locally, test and discover every read Source, call
 `artifact_validate` with the complete resource closure, apply that same closure
 through `artifact_apply`, then start and observe the requested Pipeline.
 `source_draft` and `artifact_validate` do not persist an artifact;
@@ -263,6 +269,10 @@ authoritative coded error. Each one names a next step that belongs to the user.
   is about to. Read `actual` and `desired` and report both. Do not issue a stop
   as part of the removal; stopping a pipeline carries its own consequences and
   is the user's decision.
+- **`artifact.project-id-taken`**: another project on the same server already
+  owns this resource id. Report the owning project the error names. Do not
+  rename or remove anything on your own; renaming the resource in this project
+  or removing it from the other project first is the user's decision.
 - **`artifact.not-found`**: the id is not stored. Report that the target no
   longer exists and stop. Never rewrite a precondition-bearing apply into one
   without a precondition and send it again. The first request means change the

@@ -172,15 +172,15 @@ jobs:
             abort("#{manifest_path}: skills must resolve from the plugin root") unless manifest["skills"] == "./skills/"
           '
 
-      - name: Verify workspace path boundary
+      - name: Verify project path boundary
         shell: bash
         run: |
           set -euo pipefail
           skill=skills/dsl-authoring/SKILL.md
-          grep -qF '<workspace-root>/source/<id>.tap.yml' "$skill"
-          grep -qF 'not a project-binding or' "$skill"
+          grep -qF '<project-root>/source/<id>.tap.yml' "$skill"
+          grep -qF 'not a context binding or' "$skill"
           grep -qF 'installer destination' "$skill"
-          grep -qF 'Workspace resolution is a blocking gate' "$skill"
+          grep -qF 'Project resolution is a blocking gate' "$skill"
           grep -qF 'never substitute the installed Skill directory' "$skill"
           grep -qF 'Do not run generic repository discovery' "$skill"
           grep -qF 'source_draft -> write -> author' "$skill"
@@ -348,7 +348,7 @@ jobs:
           cache-dependency-path: .upstream/tapstate/pom.xml
 
       # The schema pin can move ahead of the latest published binary. Build the exact source pin so
-      # every example is still validated by Tapstate's parser and semantic workspace checks rather
+      # every example is still validated by Tapstate's parser and semantic project checks rather
       # than by a schema-only approximation.
       - name: Validate every example with the pinned Tapstate source CLI
         shell: bash

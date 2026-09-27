@@ -6,28 +6,59 @@ reading the schema alone.
 
 ## Contents
 
-- Workspace and identity
+- Project and identity
 - Source
 - Pipeline
 - Reusable definitions
 - Reference semantics
 - Validation boundary
 
-## Workspace and identity
+## Project and identity
 
-- Store one top-level resource in each `*.tap.yml` file. For new workspaces,
-  create kind directories under the requested workspace root: `source/`,
+- A Tapstate project is a folder of `*.tap.yml` files. Its identity is declared
+  by `project.tap.yml` at the project root:
+
+  ```yaml
+  version: tapstate/v1
+  kind: project
+  id: bank_c360
+  metadata:
+    description: Customer 360 on the core banking and cards systems
+  ```
+
+  It allows only `version`, `kind`, `id`, and optional `metadata` (`labels`,
+  `description`). Never put deployment targets, connection settings, or other
+  configuration in it. `tapstate new` writes this file for every recipe; create
+  it when starting a project by hand. A folder without it still works: the
+  project id then defaults to the folder name, and `tapstate up` prints a
+  one-time hint suggesting adding the file. Do not add it to an existing
+  project unless the user asks.
+- The CLI finds the project root from the `-w/--workdir` flag, then
+  `TAPSTATE_WORKDIR`, then the nearest enclosing folder that contains
+  `project.tap.yml`, then the legacy default `tap-work`, so CLI commands work
+  from any subfolder of a project.
+- Store one top-level resource in each `*.tap.yml` file. For new projects,
+  create kind directories under the requested project root: `source/`,
   `pipeline/`, `transform/`, `view/`, and `serve/`. These directories are a
-  Tapstate workspace convention, not paths within the installed Skill. The
-  loader discovers files recursively, so a legacy flat workspace remains valid
+  Tapstate project convention, not paths within the installed Skill. The
+  loader discovers files recursively, so a legacy flat project remains valid
   and does not need a layout-only migration.
-- Set `version: tapstate/v1` and one of the five kinds: `source`, `pipeline`,
-  `transform`, `view`, or `serve`.
+- Set `version: tapstate/v1` and one of the five resource kinds: `source`,
+  `pipeline`, `transform`, `view`, or `serve`. `project` is the kind of the
+  project identity file only, never of a resource.
 - Give every top-level resource an `id` that is unique across all kinds in the
-  workspace. A dot is forbidden because `source_id.table` uses it as an
+  project. A dot is forbidden because `source_id.table` uses it as an
   addressing separator.
 - Treat `metadata.labels` and `metadata.description` as annotations only. They
-  never establish identity.
+  never establish identity. `metadata.labels.project` is reserved: `tapstate up`
+  sets it to the project id on every Pipeline and Source the project declares,
+  and writing a different value by hand is a validation error. Do not author it.
+- One server can run many projects, and a project can be deployed to several
+  servers, but resource ids stay unique per server. If another project on that
+  server already owns an id, the apply is refused with
+  `artifact.project-id-taken`, naming the owning project; rename the resource in
+  this project or remove it from the other project first. Sources a project only
+  references, rather than declares, are not labeled and stay shared.
 - Keep unknown stable fields out of the document. Use `experimental` only for
   explicitly experimental data.
 
@@ -49,7 +80,7 @@ A `source` owns a connector relationship. It has two roles:
 member names, types, defaults, visibility rules, and secret flags must come from
 the live connector catalog through MCP. When available, `source_draft` validates
 a complete Source and renders its canonical YAML without persisting it. Write
-that result to the local Source file, then apply the complete workspace only when
+that result to the local Source file, then apply the complete project only when
 online execution is requested. Omit `config` when the live contract is not
 available. When editing an existing source, preserve its complete `config`
 mapping by default and never reveal secret values.
@@ -74,7 +105,7 @@ shared replay buffer. The default for `enabled` is true.
 ## Pipeline
 
 A `pipeline` is the composing runnable unit. `source` accepts one source id or a
-list and always refers to top-level `source` resources in the same workspace.
+list and always refers to top-level `source` resources in the same project.
 The Pipeline wires inline or reusable transforms to an optional view and serve
 surface. It must produce an output through `view` or `serve`; merely naming a
 source is not a complete composition.
@@ -106,7 +137,7 @@ id, and transform use sites may override only `options`, not the body.
 
 ## Reference semantics
 
-Literal `from` tokens resolve in this order-sensitive workspace model:
+Literal `from` tokens resolve in this order-sensitive project model:
 
 - a preceding Pipeline step id;
 - a literal table name selected by one of the Pipeline's sources;
@@ -121,7 +152,7 @@ cross-source ambiguity, then check `runtime-support.md` before presenting them
 as executable.
 
 References to top-level source, transform, view, and serve ids must resolve in
-the same workspace. `serve.sync[].source` and `serve.push[].source` always name
+the same project. `serve.sync[].source` and `serve.push[].source` always name
 a top-level `source` used as a target connection supplier.
 
 ## Validation boundary
@@ -129,7 +160,7 @@ a top-level `source` used as a target connection supplier.
 Run:
 
 ```sh
-tapstate validate path/to/workspace
+tapstate validate path/to/project
 ```
 
 Validation loads every `*.tap.yml` file recursively, rejects malformed or

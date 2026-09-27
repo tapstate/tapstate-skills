@@ -67,14 +67,14 @@ Connector-specific members inside `source.config` are the only dynamic DSL
 boundary. For a known connector, the Skill uses live MCP `source_draft` to
 validate structured config and return canonical Source YAML without persisting an
 artifact. The returned document is written to
-`<workspace-root>/source/<id>.tap.yml`. This is a Tapstate workspace convention,
+`<project-root>/source/<id>.tap.yml`. This is a Tapstate project convention,
 not an installed-Skill path or a repository-relative path. The first resource
-creates its workspace and kind directory as needed, just as `tapstate new` does.
-Only a later complete-workspace apply creates online artifacts. The Skill does
-not infer configuration keys, defaults, or secret values from model memory or
-examples. When editing an existing Source, it preserves `source.config` by
-default. Replacing it requires explicit user intent and a current contract from
-MCP.
+creates its project folder, `project.tap.yml` identity file, and kind directory
+as needed, just as `tapstate new` does. Only a later complete-project apply
+creates online artifacts. The Skill does not infer configuration keys,
+defaults, or secret values from model memory or examples. When editing an
+existing Source, it preserves `source.config` by default. Replacing it requires
+explicit user intent and a current contract from MCP.
 
 Without MCP, the Skill can produce a config-free draft and validate its offline
 DSL semantics. That draft is not runnable. Offline validation also does not

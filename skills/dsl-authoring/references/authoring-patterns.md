@@ -2,29 +2,31 @@
 
 Apply these patterns after reading `resource-model.md`. Read
 `pipeline-semantics.md` for a field's meaning and `runtime-support.md` before
-describing a workspace as executable.
+describing a project as executable.
 
 ## Contents
 
-- Create a workspace
+- Create a project
 - Modify safely
-- Repair a workspace
+- Repair a project
 - Select a pattern
 - Interpret validation honestly
 
-## Create a workspace
+## Create a project
 
 1. Capture the intended source connector, read mode, Pipeline table set,
    transforms, output connector, and delivery surface. Treat the Source as a
    reusable connection and capture a separate Source-level table restriction
    only if the user explicitly requests one.
-2. Resolve and verify the requested Tapstate workspace before any file or MCP
+2. Resolve and verify the requested Tapstate project before any file or MCP
    operation. If the path cannot be verified, ask for it rather than probing the
-   agent's current directory or an installed Skill directory. Then create kind
-   directories under it as resources are added. Place each new Source in
-   `<workspace-root>/source/<id>.tap.yml` and the Pipeline in
-   `<workspace-root>/pipeline/<id>.tap.yml`. Use the equivalent kind directory
-   for reusable Transform, View, and Serve resources. These are workspace
+   agent's current directory or an installed Skill directory. For a new project,
+   write `<project-root>/project.tap.yml` with `version: tapstate/v1`,
+   `kind: project`, the project `id`, and optional `metadata` only. Then create
+   kind directories under it as resources are added. Place each new Source in
+   `<project-root>/source/<id>.tap.yml` and the Pipeline in
+   `<project-root>/pipeline/<id>.tap.yml`. Use the equivalent kind directory
+   for reusable Transform, View, and Serve resources. These are project
    directories initialized by Tapstate authoring, never paths relative to the
    installed Skill.
 3. Create one read `source` and one target connection-supplier `source` when a
@@ -47,7 +49,7 @@ describing a workspace as executable.
    when the user requested dynamic selection).
 8. Choose only grammar-supported fields from `tapstate-v1.schema.json`.
 9. Check the requested graph against `runtime-support.md`.
-10. Run `tapstate validate path/to/workspace` and fix each coded error. When the
+10. Run `tapstate validate path/to/project` and fix each coded error. When the
     user asked to run, call `connection_test` and then
     `connection_discover_schema` for every read Source, not for a sink-only
     connection supplier.
@@ -66,7 +68,7 @@ file in the resource's kind directory before validation.
 
 ## Modify safely
 
-Read the entire workspace before editing. Build a reference map for top-level
+Read the entire project before editing. Build a reference map for top-level
 ids, Pipeline source ids, step ids, `from` tokens, use references, and serve
 target sources.
 
@@ -81,12 +83,12 @@ target sources.
 - When inserting a transform, wire its `from` explicitly and update the next
   consumer if the new step is intended to replace an edge.
 - Keep reusable bodies pure: change wiring at the Pipeline use site.
-- Revalidate the whole workspace, not only the edited file.
+- Revalidate the whole project, not only the edited file.
 
 If byte preservation of opaque config is important, avoid parse-and-reserialize
 workflows that rewrite the source file. Patch only the intended YAML region.
 
-## Repair a workspace
+## Repair a project
 
 Repair in dependency order:
 
@@ -140,7 +142,7 @@ same definition appear in one Pipeline.
 
 ## Interpret validation honestly
 
-`tapstate validate` success means the installed CLI accepted the workspace's
+`tapstate validate` success means the installed CLI accepted the project's
 offline grammar, references, CEL compilation, and bundled capability checks. It
 does not prove:
 
@@ -164,5 +166,5 @@ target resolver and by row-expression checks. Fix `artifact_validate`
 diagnostics, then apply that same closure through `artifact_apply` only when the
 user asks for online execution. Start the Pipeline only after that apply
 succeeds. A partial Source apply creates an online state that no longer matches
-the workspace and is not an authoring workflow. A local CLI result is not an MCP
+the project and is not an authoring workflow. A local CLI result is not an MCP
 availability check; call exposed MCP tools before declaring the Server unreachable.

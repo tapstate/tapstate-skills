@@ -31,7 +31,7 @@ reading the schema alone.
   configuration in it. `tapstate new` writes this file for every recipe; create
   it when starting a project by hand. A folder without it still works: the
   project id then defaults to the folder name, and `tapstate up` prints a
-  one-time hint suggesting adding the file. Do not add it to an existing
+  hint suggesting adding the file. Do not add it to an existing
   project unless the user asks.
 - The CLI finds the project root from the `-w/--workdir` flag, then
   `TAPSTATE_WORKDIR`, then the nearest enclosing folder that contains
@@ -51,7 +51,7 @@ reading the schema alone.
   addressing separator.
 - Treat `metadata.labels` and `metadata.description` as annotations only. They
   never establish identity. `metadata.labels.project` is reserved: `tapstate up`
-  sets it to the project id on every Pipeline and Source the project declares,
+  sets it to the project id on every resource the project declares,
   and writing a different value by hand is a validation error. Do not author it.
 - One server can run many projects, and a project can be deployed to several
   servers, but resource ids stay unique per server. If another project on that

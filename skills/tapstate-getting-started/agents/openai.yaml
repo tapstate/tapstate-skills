@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tapstate Getting Started"
+  short_description: "A guided tour of a running Tapstate server"
+  default_prompt: "Use $tapstate-getting-started to show me how to work with Tapstate."

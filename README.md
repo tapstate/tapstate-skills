@@ -28,6 +28,12 @@ PromptScript. The `skills` command fetches this Git repository. This repository
 is not an npm package and intentionally has no `package.json`. Git commits and
 tags identify published revisions.
 
+Start with `tapstate-getting-started`: with the agent connected to a Tapstate
+server over MCP, ask "How do I work with Tapstate?". The Skill checks the
+connection, explains what the server is running, shows a real document, and
+offers next steps such as building a pipeline, which it hands to
+`dsl-authoring`. It stays read-only until you pick a step.
+
 The collection also includes `tapstate-cli-auth-compat`, which invokes the
 versioned `tools/verify-cli-auth-compat.sh` script from a Tapstate checkout to
 verify a legacy CLI against a candidate server. It does not bundle a second

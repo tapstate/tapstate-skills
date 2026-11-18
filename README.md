@@ -92,7 +92,10 @@ online Pipeline state.
 [`upstream.lock`](upstream.lock) records the Tapstate commit, DSL version,
 generated schema checksum, CLI version, and verified release-archive checksum
 used to test the Skill. The vendored schema is copied byte-for-byte from that
-Tapstate commit and remains the machine-readable grammar authority.
+Tapstate commit and remains the machine-readable grammar authority. The pin can
+name a preview integration commit that carries features still under review
+upstream; `skills/dsl-authoring/references/runtime-support.md` lists them and
+says which released CLI rejects them.
 
 It also records a second, independent Tapstate pin for the character check this
 repository runs over its own tracked files and commit messages: that check and

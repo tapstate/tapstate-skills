@@ -1,0 +1,32 @@
+version: tapstate/v1
+kind: pipeline
+id: sales_by_region
+source: src_orders
+transforms:
+  - id: sales_by_region_day
+    type: aggregate
+    from: [orders]
+    key: [id]
+    where: "=after.status != 'cancelled'"
+    groupBy:
+      region: $region
+      day: $order_day
+    fields:
+      order_count:
+        count: true
+      revenue:
+        sum: $amount
+        default: 0
+      largest_order:
+        max: $amount
+      latest_status:
+        last:
+          value: $status
+          by: $updated_at
+serve:
+  from: sales_by_region_day
+  sync:
+    - id: sales_report
+      source: tgt_reports
+      write_mode: upsert
+      on_full_load: clear

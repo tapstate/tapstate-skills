@@ -1,0 +1,63 @@
+version: tapstate/v1
+kind: pipeline
+id: player_ledger
+source: src_casino
+transforms:
+  - id: player_rows
+    type: map
+    from: [players]
+    soft_delete: is_deleted
+
+  - id: point_moves
+    type: map
+    from: [points]
+    fields:
+      kind: points
+  - id: comp_moves
+    type: map
+    from: [comps]
+    fields:
+      kind: comps
+  - id: movements
+    type: union
+    from: [point_moves, comp_moves]
+
+  - id: player_doc
+    type: nest
+    from:
+      player: player_rows
+      move: movements
+      site: sites
+    root:
+      from: player
+      key: [player_id]
+      embed:
+        - from: move
+          on:
+            player_id: player_id
+          as: array
+          path: movements
+          arrayKey: [kind, id]
+          rollup:
+            movement_count:
+              count: true
+            point_total:
+              sum: $amount
+              filter: "=after.kind == 'points'"
+              default: 0
+            last_movement_at:
+              max: $created_at
+        - from: site
+          on:
+            site_code: site_code
+          orOn:
+            - hub_site_id: hub_site_id
+          as: object
+          path: home_site
+          key: [site_id]
+serve:
+  from: player_doc
+  sync:
+    - id: player_documents
+      source: tgt_documents
+      write_mode: upsert

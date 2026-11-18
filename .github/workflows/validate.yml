@@ -21,10 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LC_ALL: C.UTF-8
-      TAPSTATE_COMMIT: a03aa7265be765b9a48dd2464e2e987f24ada60e
-      TAPSTATE_CLI_VERSION: 0.5.0
-      TAPSTATE_CLI_LINUX_X64_SHA256: 63bbf06f0087a69e8d148f371fd7bce2ce39d2e06c7e8a12330638471370166c
-      TAPSTATE_SCHEMA_SHA256: 9a33ccb0db2900f78d5aa2b8674cf8d9a327a66da84b45a4393e9c85421036b9
+      TAPSTATE_COMMIT: 9a280177fe3267e102bbf067b84b77cb39bfd79a
+      TAPSTATE_CLI_VERSION: 0.8.0
+      TAPSTATE_CLI_LINUX_X64_SHA256: b10fd61abcfe3f6104952bf42490d1888b8b5282fea1e66f3ad9328755c8f2ea
+      TAPSTATE_SCHEMA_SHA256: f056bd11b5344d84bb0d02691b942d4630e730ea42c3d95da862cd19b07135df
       # Pinned separately from TAPSTATE_COMMIT above, and that is not an oversight. That pin carries
       # the DSL schema and the CLI; the two files below are a character check. Moving one pin to
       # reach the other's artifact would force this repository to adopt every schema change in
@@ -364,9 +364,9 @@ jobs:
             java -jar "$cli" validate "$example"
           done < <(find skills/dsl-authoring/assets/examples -mindepth 1 -maxdepth 1 -type d -print | sort)
 
-      # Keep the independently published artifact pin honest as well. v0.5.0 predates flat embeds,
-      # so it validates the two compatibility examples; runtime-support.md says why the flat example
-      # requires the source pin until a later release exists.
+      # Keep the independently published artifact pin honest as well. v0.8.0 predates rollup fields,
+      # the aggregate step, orOn and soft_delete, so it validates the compatibility examples only;
+      # runtime-support.md says why the others require the source pin until a later release exists.
       - name: Validate compatibility examples with the pinned released CLI
         shell: bash
         run: |
@@ -387,4 +387,4 @@ jobs:
           while IFS= read -r example; do
             "$cli" validate "$example"
           done < <(find skills/dsl-authoring/assets/examples -mindepth 1 -maxdepth 1 -type d \
-            ! -name nested-document -print | sort)
+            ! -name grouped-totals ! -name player-ledger -print | sort)

@@ -1,0 +1,4 @@
+version: tapstate/v1
+kind: source
+id: tgt_documents
+connector: mongodb

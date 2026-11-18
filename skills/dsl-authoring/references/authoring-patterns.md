@@ -10,6 +10,7 @@ describing a workspace as executable.
 - Modify safely
 - Repair a workspace
 - Select a pattern
+- Lessons from live runs
 - Interpret validation honestly
 
 ## Create a workspace
@@ -132,11 +133,88 @@ declaration order. Map child fields to disjoint public names before Nest and
 drop internal join/key names after it. The `nested-document` asset combines an
 array child with a many-to-one flat child.
 
+Give every many-to-one object or flat embed a `key` naming the column it is
+looked up by when that column is not the referenced table's discovered key.
+
+### One array from several tables
+
+Tag each table in its own `map`, merge the tagged streams with `union`, embed
+the union, and include the tag in `arrayKey` (`[kind, id]`). For shards, one
+`map` with a quoted regex `from` and `fields: { shard: "=src" }` does both. Keep
+the root fed by a source table or a map/filter over one. The `player-ledger`
+asset shows the tagged union.
+
+### Totals inside a document
+
+Add `rollup:` to the array embed whose rows are being summarized, or use
+`as: rollup` when the rows should not appear in the document. Use `default: 0`
+only where an empty level should read as zero; a missing reference still gives
+null. Guard optional references inside the expression with `has()`. Keep the
+document under about 1 MB of state. The `player-ledger` asset counts movements,
+sums a filtered bucket, and takes a maximum.
+
+### Totals per group
+
+Use an `aggregate` step when the group is not a document (per region, per day,
+or one grand total). Put the predicate in `where:` rather than an upstream
+filter, declare `key` when the input has no primary key, and set
+`on_full_load: clear` on every target that reads the step. Plan a definition
+change as a rebuild. The `grouped-totals` asset shows the full shape.
+
+### Kept deletes
+
+Add a `map` with `soft_delete: <column>` on exactly the stream whose deletes
+should be kept: before one target, before a nest root, or before one embed.
+Require full before images on delete from the source when it feeds a nest. The
+`player-ledger` asset marks deleted players.
+
+### A reference named two ways
+
+Use `orOn` on a many-to-one nest embed, or `LEFT JOIN ... ON a = b OR c = d` in
+a join, when one row is named by one column on some parents and another column
+on the rest. Order alternatives by preference; the first live match wins.
+
 ### Reusable logic
 
 Promote repeated transform, view, or serve bodies to top-level resources. Keep
 all upstream wiring at each use site. Use explicit ids when two instances of the
 same definition appear in one Pipeline.
+
+## Lessons from live runs
+
+These came from rehearsing a multi-table MongoDB nest end to end. Apply them
+when the same shape appears.
+
+- **Declare `key` on a shared-row embed.** MongoDB discovery only knows `_id`,
+  so an object embed looked up by another column (`on: { AttractionNumber:
+  AttractionNumber }`) needs `key: [AttractionNumber]`, or start fails with
+  `nest.embed-target-not-parent-key`.
+- **Turn on before images when anything reads `before`.** For MongoDB this is
+  the connector's pre-image setting plus collection pre-images; for MySQL
+  `binlog_row_image=FULL`; for PostgreSQL `REPLICA IDENTITY FULL`. Without them
+  an update carries no `before`, and a filter such as
+  `before.RankingID != after.RankingID` fails with
+  `transform.expression-failed`. The connector key for the setting comes from
+  the live connector contract, never from memory.
+- **Guard list macros with `has()`.** A nest drops an empty array field, so
+  `after.emails.exists(...)` fails once a document's last element is deleted.
+  Write `has(after.emails) && after.emails.exists(...)`.
+- **Change a rule on a running pipeline with stop, apply, start.** Applying an
+  edit to a running or failed pipeline is accepted, but the running job keeps
+  the old definition, and `stop` or `pause` is then refused with
+  `io.workload-claim-fenced` until the previous version is applied again. Stop
+  first (a plain stop clears accumulated state, so the restart is a full
+  reload), apply the change, then start. Tell the user before stopping; it is
+  their decision.
+- **Do not promise that validation catches every typo.** An alias typo in
+  `from` is refused offline with `dsl.missing-reference`, but a misspelled
+  column in `on:` is not caught for a source without a column model such as
+  MongoDB: the pipeline runs and the embed stays empty.
+- **`write_mode: append` is not an event log on every target.** MongoDB keeps
+  the key index, so an append target still holds the latest row per key.
+- **Change events on computed nest fields are not available yet.** A filter
+  comparing `before` and `after` of a field computed on a nest output is
+  refused at apply with `dsl.row-expression-type-unknown`.
 
 ## Interpret validation honestly
 

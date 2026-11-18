@@ -2,9 +2,11 @@
 name: dsl-authoring
 description: >-
   Author, modify, explain, review, repair, and validate Tapstate tapstate/v1
-  workspaces, including Source, Pipeline, Transform, View, and Serve resources.
-  Use when creating or changing .tap.yml files, diagnosing DSL errors, tracing
-  data-flow semantics, or preparing a pipeline for conditional online execution.
+  workspaces, including Source, Pipeline, Transform, View, and Serve resources,
+  with filter, map, soft delete, union, unwind, nest (rollup fields, orOn),
+  aggregate, and join steps. Use when creating or changing .tap.yml files,
+  diagnosing DSL errors, tracing data-flow semantics, or preparing a pipeline
+  for conditional online execution.
 ---
 
 # Tapstate DSL Authoring
@@ -20,9 +22,13 @@ Read only the references needed for the current request:
 - Read `references/resource-model.md` before creating resources, changing
   identities or references, or explaining workspace structure.
 - Read `references/pipeline-semantics.md` before authoring or changing Pipeline
-  settings, transforms, stream wiring, Serve resources, or View resources.
+  settings, transforms, stream wiring, row expressions, Serve resources, or View
+  resources. It covers nest rollup fields and `orOn`, the `aggregate` step,
+  `map.soft_delete`, several tables in one array, unwind, and join limits.
 - Read `references/authoring-patterns.md` for create, modify, review, and repair
-  procedures and for selecting a relevant example under `assets/examples/`.
+  procedures, for lessons from live runs (embed `key`, before images, `has()`
+  guards, stop/apply/start), and for selecting a relevant example under
+  `assets/examples/`.
 - Read `references/runtime-support.md` before claiming that any resource or
   transform can run, or before attempting apply, start, or observation steps.
 - Inspect `references/tapstate-v1.schema.json` when exact fields, required
@@ -209,7 +215,18 @@ masking them.
 
 When those capabilities do not exist, stop after the validated offline draft.
 Identify the missing live step and do not describe apply, start, or observation
-as completed.
+as completed. If the user operates the Tapstate CLI against a server, give them
+the equivalent commands from `references/runtime-support.md` instead of
+running online commands they did not ask you to run.
+
+## Change A Running Pipeline
+
+Applying an edit to a running or failed pipeline is accepted, but the running
+job keeps its old definition. The working sequence is stop, apply, start, and
+a plain stop clears accumulated state, so the restart is a full reload. An
+`aggregate` step also refuses to start on state built by a different definition
+(`aggregate.definition-changed`). Stopping is the user's decision: say what the
+stop costs and ask before issuing it, exactly as for a removal.
 
 ## Change Or Remove An Already-Applied Resource
 
